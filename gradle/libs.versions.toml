@@ -1,0 +1,19 @@
+[versions]
+agp = "9.2.0"
+okhttp = "4.12.0"
+kotlinxCoroutines = "1.10.2"
+kotestProperty = "5.9.1"
+junit = "4.13.2"
+json = "20250517"
+
+[libraries]
+# The websocket client. The Java standard library of Android has none.
+okhttp = { group = "com.squareup.okhttp3", name = "okhttp", version.ref = "okhttp" }
+kotlinx-coroutines-core = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-core", version.ref = "kotlinxCoroutines" }
+kotest-property = { group = "io.kotest", name = "kotest-property", version.ref = "kotestProperty" }
+junit = { group = "junit", name = "junit", version.ref = "junit" }
+# org.json for the unit tests: the android.jar of the JVM tests has only stubs of it.
+json = { group = "org.json", name = "json", version.ref = "json" }
+
+[plugins]
+android-application = { id = "com.android.application", version.ref = "agp" }

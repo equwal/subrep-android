@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Subrep Streamer</string>
+    <string name="about">Live captions of the sound of this device. The sound goes to the Subrep engine on your computer. The captions come back here, to your share link, and to SubRead Overlay over the player.</string>
+
+    <string name="step_engine">1. Engine</string>
+    <string name="step_engine_why">The computer that runs \"subrep serve\", as address:port on the same network. For example 192.168.0.9:8794.</string>
+    <string name="step_lang">2. Language</string>
+    <string name="step_lang_why">ja, en, ru, fi, es, pt, or auto.</string>
+    <string name="step_source">3. Sound</string>
+    <string name="source_screen">The apps on this device (Android 10 or later)</string>
+    <string name="source_mic">The microphone</string>
+    <string name="step_share">4. Share</string>
+    <string name="share_on">Share the captions by link</string>
+    <string name="share_title_hint">Name of the stream, for the viewers</string>
+    <string name="copy">Copy</string>
+    <string name="share">Share</string>
+    <string name="new_link">New link</string>
+    <string name="copied">Link copied.</string>
+    <string name="step_overlay">5. SubRead Overlay</string>
+    <string name="overlay_on">Show the captions over the player, in SubRead Overlay</string>
+    <string name="overlay_missing">SubRead Overlay is not installed. With it, the captions are on top of the player, and a tap on a word opens the dictionary.</string>
+    <string name="install_overlay">Install SubRead Overlay</string>
+    <string name="open_overlay">Open SubRead Overlay</string>
+
+    <string name="start">Start the captions</string>
+    <string name="stop">Stop the captions</string>
+    <string name="need_engine">Enter the address of the engine first.</string>
+    <string name="need_android_10">The sound of other apps needs Android 10. Use the microphone.</string>
+    <string name="need_audio_permission">Allow the microphone. Android asks for it for the sound of the apps too.</string>
+    <string name="capture_refused">Android did not allow the capture.</string>
+
+    <string name="notification_channel">Live captions</string>
+    <string name="notification_title">Subrep: live captions</string>
+    <string name="notification_text">The sound goes to the engine.</string>
+</resources>
