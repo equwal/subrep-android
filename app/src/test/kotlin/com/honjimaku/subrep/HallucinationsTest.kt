@@ -20,6 +20,16 @@ class HallucinationsTest {
         assertEquals("Все голоса у всех певцов одинаково мерзкие.", Hallucinations.collapse("Все голоса у всех певцов одинаково мерзкие."))
     }
 
+    /** A loop of a long piece (a phrase) is cut to one of its piece. Seen live on Android 11 with `base`, Japanese. */
+    @Test
+    fun aLoopOfAPhraseIsCutToOneOfItsPiece() {
+        assertEquals(
+            "もうそこからはそこからは意識はうねり混ざり合うあかりと暗がりのうぞの中に暗が",
+            Hallucinations.collapse("もうそこからはそこからは意識はうねり混ざり合うあかりと暗がりのうぞの中に暗がりのうぞの中に暗がりのうぞの中に暗がりのうぞの中に暗がりのうぞの中に暗がりのうぞの中に暗が"),
+        )
+        assertEquals("I don't know, so", Hallucinations.collapse("I don't know, I don't know, I don't know, I don't know, I don't know, so"))
+    }
+
     /** A collapse leaves a line without a loop as it is, and a second collapse changes nothing. */
     @Test
     fun aCollapseNeverGrowsAndIsDoneOnce(): Unit = runBlocking {
