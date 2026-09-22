@@ -36,6 +36,7 @@ class MainActivity : Activity(), Feed.Listener {
     private lateinit var engineField: EditText
     private lateinit var langField: EditText
     private lateinit var titleField: EditText
+    private lateinit var sourceGroup: RadioGroup
     private lateinit var screenRadio: RadioButton
     private lateinit var micRadio: RadioButton
     private lateinit var shareBox: CheckBox
@@ -84,20 +85,23 @@ class MainActivity : Activity(), Feed.Listener {
         langField = field(store.lang, "ja", InputType.TYPE_CLASS_TEXT)
 
         step(R.string.step_source, "")
+        // The group keeps one button checked only when each button has an id before it joins.
         screenRadio = RadioButton(this).apply {
+            id = SCREEN_ID
             text = getString(R.string.source_screen)
             setTextColor(Color.BLACK)
-            isChecked = store.screen
         }
         micRadio = RadioButton(this).apply {
+            id = MIC_ID
             text = getString(R.string.source_mic)
             setTextColor(Color.BLACK)
-            isChecked = !store.screen
         }
-        content.addView(RadioGroup(this).apply {
+        sourceGroup = RadioGroup(this).apply {
             addView(screenRadio)
             addView(micRadio)
-        }, wide())
+            check(if (store.screen) SCREEN_ID else MIC_ID)
+        }
+        content.addView(sourceGroup, wide())
 
         step(R.string.step_share, "")
         shareBox = CheckBox(this).apply {
@@ -158,7 +162,7 @@ class MainActivity : Activity(), Feed.Listener {
         store.engine = engineField.text.toString()
         store.lang = langField.text.toString()
         store.title = titleField.text.toString()
-        store.screen = screenRadio.isChecked
+        store.screen = sourceGroup.checkedRadioButtonId != MIC_ID
         store.share = shareBox.isChecked
         store.overlay = overlayBox.isChecked
     }
@@ -297,5 +301,7 @@ class MainActivity : Activity(), Feed.Listener {
     private companion object {
         const val REQUEST_PERMISSIONS = 1
         const val REQUEST_PROJECTION = 2
+        const val SCREEN_ID = 1
+        const val MIC_ID = 2
     }
 }
