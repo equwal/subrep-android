@@ -5,7 +5,8 @@ plugins {
 // Release signing comes from the environment, so the key never lives in the repository.
 val keystorePath = providers.environmentVariable("SUBREP_KEYSTORE_FILE").orNull
 val keystorePassword = providers.environmentVariable("SUBREP_KEYSTORE_PASSWORD").orNull
-val keyAlias = providers.environmentVariable("SUBREP_KEY_ALIAS").orNull ?: "subrep"
+// Not named keyAlias: inside signingConfigs, that name is the property of the config itself.
+val signingAlias = providers.environmentVariable("SUBREP_KEY_ALIAS").orNull ?: "subrep"
 val signingReady = !keystorePath.isNullOrBlank() && !keystorePassword.isNullOrBlank() &&
     file(keystorePath).isFile
 
@@ -40,7 +41,7 @@ android {
             create("release") {
                 storeFile = file(keystorePath!!)
                 storePassword = keystorePassword
-                this.keyAlias = keyAlias
+                keyAlias = signingAlias
                 keyPassword = keystorePassword
             }
         }
