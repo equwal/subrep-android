@@ -34,7 +34,7 @@ class CaptureService : Service() {
     private val http = OkHttpClient.Builder().pingInterval(20, TimeUnit.SECONDS).build()
     private val main = Handler(Looper.getMainLooper())
     private val captions = HandlerThread("captions").apply { start() }
-    private var engine: LocalEngine? = null
+    private var engine: Engine? = null
     private var relay: Socket? = null
     private var overlay: OverlayFeed? = null
     private var record: AudioRecord? = null
@@ -58,8 +58,9 @@ class CaptureService : Service() {
         foreground(screen)
         Feed.start(store.share)
 
+        val cloud = store.cloud
         val model = Model.byId(store.model)
-        if (!model.downloaded(this)) {
+        if (!cloud && !model.downloaded(this)) {
             Feed.fail("Download the ${model.label} model first.")
             stopAll()
             return
@@ -90,8 +91,13 @@ class CaptureService : Service() {
                 .also { it.start() }
         }
         if (store.overlay && Overlay.installed(this)) overlay = OverlayFeed(this, Handler(captions.looper))
-        engine = LocalEngine(
-            model.file(this), lang,
+        val open: () -> Recognizer = if (cloud) {
+            { CloudRecognizer(Cloud(http, store), Feed::cloudLeft) }
+        } else {
+            { Whisper.open(model.file(this)) }
+        }
+        engine = Engine(
+            open, lang,
             onCaption = ::onCaption,
             onLanguage = { found -> relay?.send(Messages.status(true, found, title)) },
             onState = { Feed.engine(it) },
