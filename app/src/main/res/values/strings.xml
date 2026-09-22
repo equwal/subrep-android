@@ -1,10 +1,24 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">Subrep</string>
-    <string name="about">Live captions of the sound of this device, made on this device by Whisper. The captions go to your share link, where the viewers read along with Yomitan, and to SubRead Overlay over the player. No sound leaves the phone.</string>
+    <string name="about">Live captions of the sound of this device, made on this device by Whisper, or in the cloud. The captions go to your share link, where the viewers read along with Yomitan, and to SubRead Overlay over the player.</string>
 
-    <string name="step_model">1. Speech model</string>
-    <string name="step_model_why">One download, kept on the phone.</string>
+    <string name="step_where">1. Where the captions are made</string>
+    <string name="where_phone">On this phone: free, and no sound leaves the phone</string>
+    <string name="where_cloud">In the cloud: a larger model, better captions, less battery. It costs hours.</string>
+    <string name="cloud_privacy">In the cloud, each piece of sound goes to subread.space and to Groq, which make the text. Neither keeps the sound or the text.</string>
+    <string name="cloud_left">Cloud hours left: %1$s. Account: %2$s</string>
+    <string name="cloud_offline">Cloud hours: no connection to subread.space.</string>
+    <string name="cloud_closed">Cloud captions are not open yet on subread.space.</string>
+    <plurals name="cloud_buy">
+        <item quantity="one">Buy %1$d hour for %2$s</item>
+        <item quantity="other">Buy %1$d hours for %2$s</item>
+    </plurals>
+    <string name="cloud_buy_failed">The payment page did not open: %1$s</string>
+    <string name="need_hours">Buy cloud hours first, or choose this phone.</string>
+
+    <string name="step_model">2. Speech model on the phone</string>
+    <string name="step_model_why">One download, kept on the phone. The cloud does not need it.</string>
     <string name="model_ready">Downloaded.</string>
     <string name="model_missing">Not downloaded yet.</string>
     <string name="model_downloading">Downloading, %1$d %%.</string>
@@ -12,19 +26,19 @@
     <string name="model_failed">The download failed: %1$s</string>
     <string name="download">Download</string>
     <string name="need_model">Download the model first.</string>
-    <string name="step_lang">2. Language</string>
+    <string name="step_lang">3. Language</string>
     <string name="step_lang_why">ja, en, ru, fi, es, pt, or auto. A set language is faster and more exact than auto.</string>
-    <string name="step_source">3. Sound</string>
+    <string name="step_source">4. Sound</string>
     <string name="source_screen">The apps on this device (Android 10 or later)</string>
     <string name="source_mic">The microphone</string>
-    <string name="step_share">4. Share</string>
+    <string name="step_share">5. Share</string>
     <string name="share_on">Share the captions by link</string>
     <string name="share_title_hint">Name of the stream, for the viewers</string>
     <string name="copy">Copy</string>
     <string name="share">Share</string>
     <string name="new_link">New link</string>
     <string name="copied">Link copied.</string>
-    <string name="step_overlay">5. SubRead Overlay</string>
+    <string name="step_overlay">6. SubRead Overlay</string>
     <string name="overlay_on">Show the captions over the player, in SubRead Overlay</string>
     <string name="overlay_missing">SubRead Overlay is not installed. With it, the captions are on top of the player, and a tap on a word opens the dictionary.</string>
     <string name="install_overlay">Install SubRead Overlay</string>
@@ -38,5 +52,5 @@
 
     <string name="notification_channel">Live captions</string>
     <string name="notification_title">Subrep: live captions</string>
-    <string name="notification_text">Whisper listens to the sound of this device.</string>
+    <string name="notification_text">Subrep listens to the sound of this device.</string>
 </resources>

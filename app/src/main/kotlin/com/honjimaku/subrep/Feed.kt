@@ -25,7 +25,7 @@ object Feed {
     @Volatile var running = false
         private set
 
-    /** [LocalEngine.STATE_LOADING], [LocalEngine.STATE_READY], or an error with its reason. */
+    /** [Engine.STATE_LOADING], [Engine.STATE_READY], or an error with its reason. */
     @Volatile var engine = ""
         private set
 
@@ -57,6 +57,10 @@ object Feed {
     @Volatile var downloadTotal = -1L
         private set
     @Volatile var downloadError = ""
+        private set
+
+    /** The seconds of cloud captions that the account has, -1 while unknown. */
+    @Volatile var cloudSecondsLeft = -1L
         private set
 
     fun add(listener: Listener) = listeners.add(listener)
@@ -148,6 +152,11 @@ object Feed {
         downloadDone = done
         downloadTotal = total
         downloadError = error
+        changed()
+    }
+
+    fun cloudLeft(seconds: Long) {
+        cloudSecondsLeft = seconds
         changed()
     }
 

@@ -34,6 +34,10 @@ import kotlin.concurrent.thread
 class MainActivity : Activity(), Feed.Listener {
 
     private lateinit var store: Store
+    private val http = OkHttpClient()
+    private lateinit var whereGroup: RadioGroup
+    private lateinit var cloudStatus: TextView
+    private lateinit var packButtons: LinearLayout
     private lateinit var content: LinearLayout
     private lateinit var modelGroup: RadioGroup
     private lateinit var modelStatus: TextView
@@ -68,6 +72,8 @@ class MainActivity : Activity(), Feed.Listener {
         super.onResume()
         Feed.add(this)
         onChange()
+        // After a payment in the browser, the user comes back here: show the new hours.
+        refreshCloud()
     }
 
     override fun onPause() {
@@ -79,6 +85,31 @@ class MainActivity : Activity(), Feed.Listener {
     private fun draw() {
         title(getString(R.string.app_name))
         note(getString(R.string.about))
+
+        step(R.string.step_where, "")
+        whereGroup = RadioGroup(this).apply {
+            addView(RadioButton(this@MainActivity).apply {
+                id = PHONE_ID
+                text = getString(R.string.where_phone)
+                setTextColor(Color.BLACK)
+            })
+            addView(RadioButton(this@MainActivity).apply {
+                id = CLOUD_ID
+                text = getString(R.string.where_cloud)
+                setTextColor(Color.BLACK)
+            })
+            check(if (store.cloud) CLOUD_ID else PHONE_ID)
+        }
+        content.addView(whereGroup, wide())
+        cloudStatus = TextView(this).apply {
+            setTextColor(Color.BLACK)
+            textSize = 15f
+            setTextIsSelectable(true)
+        }
+        content.addView(cloudStatus, wide())
+        packButtons = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
+        content.addView(packButtons, wide())
+        note(getString(R.string.cloud_privacy), top = 4)
 
         step(R.string.step_model, getString(R.string.step_model_why))
         modelGroup = RadioGroup(this)
@@ -179,6 +210,7 @@ class MainActivity : Activity(), Feed.Listener {
     private fun chosenModel(): Model = Model.entries[(modelGroup.checkedRadioButtonId - MODEL_ID).coerceIn(0, Model.entries.size - 1)]
 
     private fun save() {
+        store.cloud = whereGroup.checkedRadioButtonId == CLOUD_ID
         store.model = chosenModel().id
         store.lang = langField.text.toString()
         store.title = titleField.text.toString()
@@ -220,7 +252,11 @@ class MainActivity : Activity(), Feed.Listener {
 
     private fun startCapture() {
         save()
-        if (!chosenModel().downloaded(this)) return toast(R.string.need_model)
+        if (store.cloud) {
+            if (Feed.cloudSecondsLeft == 0L) return toast(R.string.need_hours)
+        } else if (!chosenModel().downloaded(this)) {
+            return toast(R.string.need_model)
+        }
         val missing = buildList {
             if (checkSelfPermission(Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED) add(Manifest.permission.RECORD_AUDIO)
             if (Build.VERSION.SDK_INT >= 33 && checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
@@ -254,15 +290,62 @@ class MainActivity : Activity(), Feed.Listener {
         statusView.text = status()
         linesView.text = Feed.text()
         showModel()
+        cloud?.let { showCloud(it.copy(secondsLeft = Feed.cloudSecondsLeft.takeIf { s -> s >= 0 } ?: it.secondsLeft)) }
+    }
+
+    /** The last answer of subread.space about the cloud hours, or null before the first. */
+    private var cloud: Cloud.State? = null
+
+    private fun refreshCloud() {
+        val app = Cloud(http, store)
+        thread(name = "cloud") {
+            val state = runCatching { app.state() }.getOrNull()
+            runOnUiThread {
+                cloud = state
+                if (state == null) {
+                    cloudStatus.text = getString(R.string.cloud_offline)
+                    packButtons.removeAllViews()
+                } else {
+                    Feed.cloudLeft(state.secondsLeft)
+                    showCloud(state)
+                }
+            }
+        }
+    }
+
+    private fun showCloud(state: Cloud.State) {
+        if (!state.available) {
+            cloudStatus.text = getString(R.string.cloud_closed)
+            packButtons.removeAllViews()
+            return
+        }
+        cloudStatus.text = getString(R.string.cloud_left, Cloud.hours(state.secondsLeft), state.accountId)
+        if (packButtons.childCount == state.packs.size) return
+        packButtons.removeAllViews()
+        for (pack in state.packs) {
+            packButtons.addView(button(resources.getQuantityString(R.plurals.cloud_buy, pack.hours, pack.hours, pack.price)) { buy(pack) })
+        }
+    }
+
+    private fun buy(pack: Cloud.Pack) {
+        val app = Cloud(http, store)
+        thread(name = "checkout") {
+            val url = runCatching { app.checkout(pack.id) }
+            runOnUiThread {
+                url.onSuccess { open(it) }.onFailure {
+                    Toast.makeText(this, getString(R.string.cloud_buy_failed, it.message), Toast.LENGTH_LONG).show()
+                }
+            }
+        }
     }
 
     private fun status(): String {
         if (!Feed.running) return Feed.error
-        val model = Model.byId(store.model).label
+        val model = if (store.cloud) "Cloud" else "Whisper ${Model.byId(store.model).label}"
         val engine = when {
-            Feed.engine == LocalEngine.STATE_LOADING -> "loading…"
-            Feed.engine == LocalEngine.STATE_READY && Feed.speed > 0f -> "ready, %.1f s for each second of speech".format(Feed.speed)
-            Feed.engine == LocalEngine.STATE_READY -> "ready"
+            Feed.engine == Engine.STATE_LOADING -> "loading…"
+            Feed.engine == Engine.STATE_READY && Feed.speed > 0f -> "ready, %.1f s for each second of speech".format(Feed.speed)
+            Feed.engine == Engine.STATE_READY -> "ready"
             else -> Feed.engine
         }
         val late = if (Feed.late > 0) ", ${Feed.late} pieces dropped" else ""
@@ -282,7 +365,7 @@ class MainActivity : Activity(), Feed.Listener {
         val bars = Feed.bars()
         val level = "▮".repeat(bars) + "▯".repeat(10 - bars)
         val error = if (Feed.error.isEmpty()) "" else "\n${Feed.error}"
-        return "Whisper $model: $engine$late\nShare link: $relay\nSubRead Overlay: $overlay\nSound: $level$error"
+        return "$model: $engine$late\nShare link: $relay\nSubRead Overlay: $overlay\nSound: $level$error"
     }
 
     private fun showLink() {
@@ -358,6 +441,8 @@ class MainActivity : Activity(), Feed.Listener {
         const val REQUEST_PROJECTION = 2
         const val SCREEN_ID = 1
         const val MIC_ID = 2
+        const val PHONE_ID = 3
+        const val CLOUD_ID = 4
         const val MODEL_ID = 10
     }
 }

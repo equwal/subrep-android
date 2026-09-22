@@ -25,8 +25,8 @@ android {
         // The sound of other apps can be captured from Android 10 (API 29). Older devices get the microphone.
         minSdk = 26
         targetSdk = 36
-        versionCode = 2
-        versionName = "0.1.1"
+        versionCode = 3
+        versionName = "0.2.0"
 
         // Each phone worth running Whisper on is 64-bit ARM; the speech library is built for
         // ARMv8.2 (see src/main/cpp/CMakeLists.txt).

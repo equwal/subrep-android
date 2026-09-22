@@ -16,16 +16,16 @@ internal object WhisperLib {
 class WhisperUnavailable(message: String) : Exception(message)
 
 /** A loaded speech model. Not thread-safe: one transcription at a time. */
-class Whisper private constructor(private var ptr: Long) : AutoCloseable {
+class Whisper private constructor(private var ptr: Long) : Recognizer {
 
     /** The language that Whisper found in the last piece: "ja", "ru", ... */
-    val detectedLanguage: String get() = WhisperLib.detectedLanguage(ptr)
+    override val detectedLanguage: String get() = WhisperLib.detectedLanguage(ptr)
 
     /**
      * The text of one piece of sound: [samples] at 16 kHz mono, from -1 to 1. [language] is a
      * code such as "ja", or "auto".
      */
-    fun transcribe(samples: FloatArray, language: String): String {
+    override fun transcribe(samples: FloatArray, language: String): String {
         val rc = WhisperLib.transcribe(ptr, samples, threads, language, audioContext(samples.size))
         if (rc != 0) throw WhisperUnavailable("The speech model failed on this sound (code $rc).")
         return (0 until WhisperLib.segmentCount(ptr)).joinToString(" ") {

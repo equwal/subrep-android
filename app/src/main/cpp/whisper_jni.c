@@ -1,5 +1,5 @@
 // The narrowest bridge to whisper.cpp: load a model, transcribe one piece of 16 kHz mono float
-// PCM, read the text back. One transcription runs at a time (LocalEngine has one worker).
+// PCM, read the text back. One transcription runs at a time (Engine has one worker).
 
 #include <jni.h>
 #include <string.h>

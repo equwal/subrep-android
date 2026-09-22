@@ -30,6 +30,16 @@ class Store(context: Context) {
         get() = prefs.getString("title", "").orEmpty()
         set(value) = prefs.edit().putString("title", value.trim().take(80)).apply()
 
+    /** True: the cloud makes the captions, with hours from subread.space. False: the phone. */
+    var cloud: Boolean
+        get() = prefs.getBoolean("cloud", false)
+        set(value) = prefs.edit().putBoolean("cloud", value).apply()
+
+    /** The device cookie of subread.space: the account that holds the cloud hours. */
+    var device: String
+        get() = prefs.getString("device", "").orEmpty()
+        set(value) = prefs.edit().putString("device", value).apply()
+
     var overlay: Boolean
         get() = prefs.getBoolean("overlay", true)
         set(value) = prefs.edit().putBoolean("overlay", value).apply()

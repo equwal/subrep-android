@@ -30,4 +30,15 @@ object Pcm {
         }
         return n
     }
+
+    /** [samples] from -1 to 1 as 16-bit little-endian PCM: the reverse of [toFloat]. */
+    fun toBytes(samples: FloatArray): ByteArray {
+        val out = ByteArray(samples.size * 2)
+        for ((n, value) in samples.withIndex()) {
+            val sample = Math.round(value * 32768f).coerceIn(-32768, 32767)
+            out[2 * n] = sample.toByte()
+            out[2 * n + 1] = (sample shr 8).toByte()
+        }
+        return out
+    }
 }

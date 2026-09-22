@@ -1,17 +1,16 @@
 package com.honjimaku.subrep
 
-import android.os.SystemClock
-import java.io.File
 import java.util.concurrent.LinkedBlockingDeque
 import kotlin.concurrent.thread
 
 /**
- * Speech recognition on the phone: the sound goes through the [Segmenter], and each piece goes
- * to Whisper on one worker thread. A piece that waits while Whisper is behind by more than
- * [QUEUE_LIMIT] pieces is dropped, the oldest first: a late caption helps nobody.
+ * Speech recognition: the sound goes through the [Segmenter], and each piece goes to the
+ * [Recognizer] (Whisper on the phone, or the cloud) on one worker thread. A piece that waits
+ * while the recognizer is behind by more than [QUEUE_LIMIT] pieces is dropped, the oldest first:
+ * a late caption helps nobody.
  */
-class LocalEngine(
-    private val model: File,
+class Engine(
+    private val open: () -> Recognizer,
     private val language: String,
     private val onCaption: (Caption) -> Unit,
     private val onLanguage: (String) -> Unit,
@@ -67,7 +66,7 @@ class LocalEngine(
 
     private fun work() {
         val whisper = try {
-            Whisper.open(model)
+            open()
         } catch (e: Exception) {
             onState("${STATE_ERROR}${e.message}")
             return
@@ -77,18 +76,33 @@ class LocalEngine(
         }
         onState(STATE_READY)
         var lastLanguage = ""
+        var failed = false
         try {
             while (!Thread.currentThread().isInterrupted) {
                 val piece = queue.takeFirst()
                 if (piece === END) break
-                val started = SystemClock.elapsedRealtime()
+                val started = System.nanoTime()
                 val text = try {
                     Hallucinations.collapse(whisper.transcribe(piece, language)).trim()
                 } catch (e: WhisperUnavailable) {
+                    failed = true
                     onState("${STATE_ERROR}${e.message}")
                     continue
+                } catch (e: Cloud.PieceFailed) {
+                    // One lost piece, for example a short drop of the network. The next can work.
+                    failed = true
+                    onState("${STATE_ERROR}${e.message}")
+                    continue
+                } catch (e: Cloud.OutOfHours) {
+                    // Each next piece would fail the same way.
+                    onState("${STATE_ERROR}${e.message}")
+                    break
                 }
-                speed = (SystemClock.elapsedRealtime() - started) / 1000f / (piece.size / 16_000f)
+                if (failed) {
+                    failed = false
+                    onState(STATE_READY)
+                }
+                speed = (System.nanoTime() - started) / 1e9f / (piece.size / 16_000f)
                 if (language == "auto") {
                     val found = whisper.detectedLanguage
                     if (found.isNotEmpty() && found != lastLanguage) {
