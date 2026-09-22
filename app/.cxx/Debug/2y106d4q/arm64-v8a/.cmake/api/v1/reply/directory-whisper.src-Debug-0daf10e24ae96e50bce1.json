@@ -1,0 +1,14 @@
+{
+	"backtraceGraph" : 
+	{
+		"commands" : [],
+		"files" : [],
+		"nodes" : []
+	},
+	"installers" : [],
+	"paths" : 
+	{
+		"build" : "whisper/src",
+		"source" : "C:/Users/Administrator/subrep-android/third_party/whisper.cpp/src"
+	}
+}

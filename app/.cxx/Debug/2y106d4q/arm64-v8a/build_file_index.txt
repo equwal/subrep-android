@@ -1,0 +1,6 @@
+C:\Users\Administrator\subrep-android\app\src\main\cpp\CMakeLists.txt
+C:\Users\Administrator\subrep-android\third_party\whisper.cpp\CMakeLists.txt
+C:\Users\Administrator\subrep-android\third_party\whisper.cpp\ggml\CMakeLists.txt
+C:\Users\Administrator\subrep-android\third_party\whisper.cpp\ggml\src\CMakeLists.txt
+C:\Users\Administrator\subrep-android\third_party\whisper.cpp\ggml\src\ggml-cpu\CMakeLists.txt
+C:\Users\Administrator\subrep-android\third_party\whisper.cpp\src\CMakeLists.txt

@@ -1,6 +1,6 @@
 package com.honjimaku.subrep
 
-/** Sums over 16-bit little-endian PCM, for the level meter. */
+/** Sums and conversions over 16-bit little-endian PCM. */
 object Pcm {
 
     /** The largest sample size in the first [count] bytes of [bytes]: 0 for silence, up to 32768. */
@@ -14,5 +14,20 @@ object Pcm {
             i += 2
         }
         return peak
+    }
+
+    /**
+     * The first [count] bytes of [bytes] as samples from -1 to 1, into [out]. Returns how many
+     * samples were written: half of [count], or the size of [out] when that is less.
+     */
+    fun toFloat(bytes: ByteArray, count: Int, out: FloatArray): Int {
+        var i = 0
+        var n = 0
+        while (i + 1 < count && n < out.size) {
+            val sample = (bytes[i].toInt() and 0xFF) or (bytes[i + 1].toInt() shl 8)
+            out[n++] = sample / 32768f
+            i += 2
+        }
+        return n
     }
 }

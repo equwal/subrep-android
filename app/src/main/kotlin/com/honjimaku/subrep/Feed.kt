@@ -6,8 +6,9 @@ import android.os.SystemClock
 import java.util.concurrent.CopyOnWriteArraySet
 
 /**
- * What the screen shows: the state of the service and the last captions. The service writes
- * it from its threads; the screen reads it on the main thread after each change.
+ * What the screen shows: the state of the service, the model download, and the last captions.
+ * The service writes it from its threads; the screen reads it on the main thread after each
+ * change.
  */
 object Feed {
 
@@ -23,7 +24,15 @@ object Feed {
 
     @Volatile var running = false
         private set
-    @Volatile var engineUp = false
+
+    /** [LocalEngine.STATE_LOADING], [LocalEngine.STATE_READY], or an error with its reason. */
+    @Volatile var engine = ""
+        private set
+
+    /** The time Whisper took for the last piece, divided by the length of the piece. */
+    @Volatile var speed = 0f
+        private set
+    @Volatile var late = 0
         private set
     @Volatile var relayUp = false
         private set
@@ -40,6 +49,16 @@ object Feed {
     @Volatile var partial = ""
         private set
 
+    /** The model that downloads now, and its progress: bytes so far, total (-1 unknown). */
+    @Volatile var downloading: Model? = null
+        private set
+    @Volatile var downloadDone = 0L
+        private set
+    @Volatile var downloadTotal = -1L
+        private set
+    @Volatile var downloadError = ""
+        private set
+
     fun add(listener: Listener) = listeners.add(listener)
 
     fun remove(listener: Listener) = listeners.remove(listener)
@@ -48,9 +67,11 @@ object Feed {
         synchronized(lock) { finals.clear() }
         partial = ""
         error = ""
+        engine = ""
+        speed = 0f
+        late = 0
         overlayAnswer = ""
         peak = 0
-        engineUp = false
         relayUp = false
         this.relayOn = relayOn
         running = true
@@ -59,7 +80,6 @@ object Feed {
 
     fun stop() {
         running = false
-        engineUp = false
         relayUp = false
         peak = 0
         changed()
@@ -70,9 +90,14 @@ object Feed {
         changed()
     }
 
-    fun engine(up: Boolean) {
-        engineUp = up
+    fun engine(state: String) {
+        engine = state
         changed()
+    }
+
+    fun progress(speed: Float, late: Int) {
+        this.speed = speed
+        this.late = late
     }
 
     fun relay(up: Boolean) {
@@ -115,6 +140,14 @@ object Feed {
                 }
             }
         }
+        changed()
+    }
+
+    fun download(model: Model?, done: Long, total: Long, error: String = "") {
+        downloading = model
+        downloadDone = done
+        downloadTotal = total
+        downloadError = error
         changed()
     }
 

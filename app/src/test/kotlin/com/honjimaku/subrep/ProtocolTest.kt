@@ -44,46 +44,37 @@ class MessagesTest {
     private val texts = Arb.string(0..60)
     private val types = Arb.element("partial", "final", "clear")
 
-    /** The text of a caption of the engine comes out as it went in, in any script. */
+    /** A caption reaches the viewer page as the desktop app sends it: type, text, tr, ts. */
     @Test
-    fun aCaptionIsReadBackUnchanged(): Unit = runBlocking {
+    fun aCaptionHasWhatTheViewerPageReads(): Unit = runBlocking {
         checkAll(types, texts) { type, text ->
-            val json = JSONObject().put("type", type).put("text", text).put("ts", 1.5).toString()
-            assertEquals(Caption(type, text), Messages.caption(json))
+            val json = JSONObject(Messages.caption(Caption(type, text), nowSeconds = 12.5))
+            assertEquals(type, json.getString("type"))
+            assertEquals(text, json.getString("text"))
+            assertEquals("", json.getString("tr"))
+            assertEquals(12.5, json.getDouble("ts"), 0.0)
         }
-    }
-
-    @Test
-    fun theOtherMessagesAreNoCaption(): Unit = runBlocking {
-        checkAll(Arb.element("ready", "status", "hello", "error", "gone", ""), texts) { type, text ->
-            assertNull(Messages.caption(JSONObject().put("type", type).put("text", text).toString()))
-        }
-        assertNull(Messages.caption("not json"))
-        assertNull(Messages.caption(""))
     }
 
     @Test
     fun anErrorGivesItsReason() {
-        assertEquals("too many active tabs", Messages.error("""{"type":"error","error":"too many active tabs"}"""))
+        assertEquals("wrong room secret", Messages.error("""{"type":"error","error":"wrong room secret"}"""))
         assertEquals("error", Messages.error("""{"type":"error"}"""))
-        assertNull(Messages.error("""{"type":"final","text":"x"}"""))
+        assertNull(Messages.error("""{"type":"ready","room":"x"}"""))
         assertNull(Messages.error("junk"))
     }
 
     @Test
-    fun theHellosHaveWhatTheServersRead(): Unit = runBlocking {
-        checkAll(Arb.int(8000..192000), texts, texts) { rate, lang, source ->
-            val hello = JSONObject(Messages.engineHello(rate, lang, source))
-            assertEquals("hello", hello.getString("type"))
-            assertEquals(rate, hello.getInt("sampleRate"))
-            assertEquals(lang, hello.getString("lang"))
-            assertEquals(source, hello.getString("source"))
-        }
+    fun theHelloAndTheStatusHaveWhatTheRelayReads(): Unit = runBlocking {
         checkAll(texts, texts, texts) { secret, lang, title ->
             val hello = JSONObject(Messages.relayHello(secret, lang, title))
             assertEquals(secret, hello.getString("secret"))
             assertEquals(lang, hello.getString("lang"))
             assertEquals(title, hello.getString("title"))
+            val status = JSONObject(Messages.status(true, lang, title))
+            assertEquals("status", status.getString("type"))
+            assertTrue(status.getBoolean("live"))
+            assertEquals(lang, status.getString("lang"))
         }
         assertTrue(Messages.isReady("""{"type":"ready","room":"x"}"""))
     }
@@ -91,17 +82,33 @@ class MessagesTest {
 
 class PcmTest {
 
+    private fun bytesOf(samples: List<Int>): ByteArray {
+        val bytes = ByteArray(samples.size * 2)
+        samples.forEachIndexed { i, s ->
+            bytes[2 * i] = (s and 0xFF).toByte()
+            bytes[2 * i + 1] = ((s shr 8) and 0xFF).toByte()
+        }
+        return bytes
+    }
+
     /** The peak of a frame is the largest sample size in it, with the sign taken away. */
     @Test
     fun thePeakIsTheLargestSampleSize(): Unit = runBlocking {
         checkAll(Arb.list(Arb.int(-32768..32767), 0..400)) { samples ->
-            val bytes = ByteArray(samples.size * 2)
-            samples.forEachIndexed { i, s ->
-                bytes[2 * i] = (s and 0xFF).toByte()
-                bytes[2 * i + 1] = ((s shr 8) and 0xFF).toByte()
-            }
+            val bytes = bytesOf(samples)
             val expected = samples.maxOfOrNull { if (it < 0) -it else it } ?: 0
             assertEquals(expected, Pcm.peak(bytes, bytes.size))
+        }
+    }
+
+    /** Each sample comes out as its value over 32768, in the same order. */
+    @Test
+    fun theFloatsAreTheSamplesOver32768(): Unit = runBlocking {
+        checkAll(Arb.list(Arb.int(-32768..32767), 0..400)) { samples ->
+            val bytes = bytesOf(samples)
+            val out = FloatArray(samples.size)
+            assertEquals(samples.size, Pcm.toFloat(bytes, bytes.size, out))
+            samples.forEachIndexed { i, s -> assertEquals(s / 32768f, out[i], 0f) }
         }
     }
 
@@ -111,5 +118,7 @@ class PcmTest {
         assertEquals(0, Pcm.peak(bytes, 2))
         assertEquals(32512, Pcm.peak(bytes, 4))
         assertEquals(0, Pcm.peak(bytes, 3))
+        val out = FloatArray(4)
+        assertEquals(1, Pcm.toFloat(bytes, 3, out))
     }
 }

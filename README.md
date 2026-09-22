@@ -1,84 +1,77 @@
-# Subrep Streamer
+# Subrep for Android
 
-Live captions of the sound of an Android device, with the
-[Subrep](https://honjimaku.com/subrep/) engine on your computer.
+[Subrep](https://honjimaku.com/subrep/) on a phone: live captions of the
+sound of the device, made on the device by Whisper, shared by link.
 
-The app captures the sound of the apps on the device (a video, a game, a
-browser) or the microphone. It streams the sound to `subrep serve` on your
-computer. The captions come back to the app, to your share link on
-`honjimaku.com`, and to [SubRead Overlay](https://github.com/equwal/subread-overlay)
-over the player, where a tap on a word opens the dictionary.
+The app captures the sound of the apps on the phone (a video, a game, a
+browser) or the microphone. Whisper, on the phone, turns it into captions.
+The captions go to your share link on `honjimaku.com`, where the viewers read
+along and mine with Yomitan, and to
+[SubRead Overlay](https://github.com/equwal/subread-overlay) over the player,
+where a tap on a word opens the dictionary. No sound leaves the phone.
 
-Whisper does not run on the phone. The computer does the speech recognition
-with the models and the languages of Subrep, and the phone only sends sound.
-A phone from 2019 works the same as a new one.
+## How to use it
 
-## Setup
-
-On the computer, once:
-
-1. Start the engine for the language of the video:
-
-   ```
-   subrep serve --host 0.0.0.0 --port 8794 --lang ja
-   ```
-
-2. Let the phone reach port 8794. On Windows, as administrator:
-
-   ```
-   netsh advfirewall firewall add rule name="Subrep engine" dir=in action=allow protocol=TCP localport=8794
-   ```
-
-3. Find the address of the computer on the network: `ipconfig` on Windows,
-   `ip addr` on Linux. For example `192.168.0.9`.
-
-On the phone:
-
-1. Install the app. Install SubRead Overlay too, and allow its two steps.
-2. Enter the engine as `address:port`, for example `192.168.0.9:8794`.
-3. Enter the language.
-4. Choose the sound: the apps on this device (Android 10 or later), or the
+1. Choose the speech model and press "Download". `base` (82 MB) keeps up on
+   most phones. `small` (264 MB) reads better and comes late. `tiny` is for
+   an old phone.
+2. Enter the language: `ja`, `en`, `ru`, ... or `auto`. A set language is
+   faster and more exact.
+3. Choose the sound: the apps on this device (Android 10 or later), or the
    microphone.
-5. Press "Start the captions". Android asks once for the capture of the
-   screen, and once for the microphone. The microphone permission also
-   covers the sound of the apps.
-6. Start the video. The captions come to the app, to the link and to the
-   overlay.
+4. Press "Start the captions". Android asks for the capture of the screen
+   ("Share entire screen"), and once for the microphone permission. That
+   permission covers the sound of the apps too.
+5. Start the video. The captions come to the app, to the link and to the
+   overlay. The notification has a "Stop" button.
 
-The notification has a "Stop" button.
+The share link stays the same across restarts. "New link" makes another one,
+and the old one stops.
 
-## What the device cannot capture
+## What the phone cannot capture
 
 - An app that refuses the capture of its sound: a video app with DRM, and
-  some music apps. Android then gives silence. Use the microphone.
+  some music apps. Android gives silence. Use the microphone.
 - Sound from another device over Bluetooth. A phone is a Bluetooth source,
-  not a speaker, so it cannot receive sound this way without root.
+  not a speaker.
 
-## The share link
+## How it works
 
-The link is `https://honjimaku.com/subrep/w/<room>`, the same relay as the
-desktop app. It stays the same across restarts. "New link" makes another
-one, and the old one stops.
-
-## Protocol
-
-The engine protocol is that of `subrep serve`: a JSON hello
-(`{"type":"hello","sampleRate":16000,"lang":"ja","source":"android"}`), then
-binary frames of 16-bit little-endian mono PCM, and captions back as
-`{"type":"partial"|"final"|"clear","text":...}`.
+`CaptureService` reads 16 kHz mono PCM from `AudioRecord` (with an
+`AudioPlaybackCaptureConfiguration` for the apps, or the microphone).
+`Segmenter` cuts it into pieces at pauses, with the rules of the desktop
+app: a block of 32 ms is speech above the noise floor times 3, a pause of
+0.65 s closes a piece, 11 s is the most. `LocalEngine` gives each piece to
+whisper.cpp on one thread, with the encoder window cut to the length of the
+piece, and drops the invented lines that `Hallucinations` lists. Each piece
+is one final caption.
 
 The relay protocol is that of `subrep.share`: a websocket to
 `wss://honjimaku.com/subrep/pub/<room>`, a hello with the room secret, then
-the captions as they came from the engine.
+`{"type":"final","text":...,"tr":"","ts":...}` for each caption.
 
 The overlay protocol is the `line` method of the content provider
-`content://space.subread.overlay.player`, with the extra `partial`.
+`content://space.subread.overlay.player`.
+
+`adb shell dumpsys activity service com.honjimaku.subrep/.CaptureService`
+prints the state, for a bug report.
 
 ## Build
 
+whisper.cpp is a submodule:
+
 ```
+git submodule update --init
 ./gradlew :app:testDebugUnitTest :app:assembleDebug
 ```
 
+The native library is built for 64-bit ARM with ARMv8.2 half-precision and
+dot-product instructions (each phone since 2018). NDK 29 and CMake 3.31.6
+from the Android SDK.
+
 For a release, set `SUBREP_KEYSTORE_FILE`, `SUBREP_KEYSTORE_PASSWORD` and
 `SUBREP_KEY_ALIAS` (default `subrep`), then `./gradlew :app:assembleRelease`.
+
+## Licence
+
+AGPL-3.0. whisper.cpp is MIT.

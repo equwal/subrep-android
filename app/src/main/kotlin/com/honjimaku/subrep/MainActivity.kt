@@ -24,21 +24,23 @@ import android.widget.RadioGroup
 import android.widget.ScrollView
 import android.widget.TextView
 import android.widget.Toast
+import okhttp3.OkHttpClient
+import kotlin.concurrent.thread
 
 /**
- * The one screen of the app: the engine, the language, the sound, the share link, the overlay,
- * and the button. The state of the service and the last captions are under the button.
+ * The one screen of the app: the speech model, the language, the sound, the share link, the
+ * overlay, and the button. The state of the service and the last captions are under the button.
  */
 class MainActivity : Activity(), Feed.Listener {
 
     private lateinit var store: Store
     private lateinit var content: LinearLayout
-    private lateinit var engineField: EditText
+    private lateinit var modelGroup: RadioGroup
+    private lateinit var modelStatus: TextView
+    private lateinit var downloadButton: Button
     private lateinit var langField: EditText
     private lateinit var titleField: EditText
     private lateinit var sourceGroup: RadioGroup
-    private lateinit var screenRadio: RadioButton
-    private lateinit var micRadio: RadioButton
     private lateinit var shareBox: CheckBox
     private lateinit var overlayBox: CheckBox
     private lateinit var linkView: TextView
@@ -78,27 +80,42 @@ class MainActivity : Activity(), Feed.Listener {
         title(getString(R.string.app_name))
         note(getString(R.string.about))
 
-        step(R.string.step_engine, getString(R.string.step_engine_why))
-        engineField = field(store.engine, "192.168.0.9:8794", InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_VARIATION_URI)
+        step(R.string.step_model, getString(R.string.step_model_why))
+        modelGroup = RadioGroup(this)
+        for (model in Model.entries) {
+            modelGroup.addView(RadioButton(this).apply {
+                id = MODEL_ID + model.ordinal
+                text = "${model.label}: ${model.about}"
+                setTextColor(Color.BLACK)
+            })
+        }
+        modelGroup.check(MODEL_ID + Model.byId(store.model).ordinal)
+        modelGroup.setOnCheckedChangeListener { _, _ -> showModel() }
+        content.addView(modelGroup, wide())
+        modelStatus = TextView(this).apply {
+            setTextColor(Color.BLACK)
+            textSize = 15f
+        }
+        content.addView(modelStatus, wide())
+        downloadButton = button(getString(R.string.download)) { download() }
+        content.addView(downloadButton, LinearLayout.LayoutParams(-2, -2))
 
         step(R.string.step_lang, getString(R.string.step_lang_why))
         langField = field(store.lang, "ja", InputType.TYPE_CLASS_TEXT)
 
         step(R.string.step_source, "")
         // The group keeps one button checked only when each button has an id before it joins.
-        screenRadio = RadioButton(this).apply {
-            id = SCREEN_ID
-            text = getString(R.string.source_screen)
-            setTextColor(Color.BLACK)
-        }
-        micRadio = RadioButton(this).apply {
-            id = MIC_ID
-            text = getString(R.string.source_mic)
-            setTextColor(Color.BLACK)
-        }
         sourceGroup = RadioGroup(this).apply {
-            addView(screenRadio)
-            addView(micRadio)
+            addView(RadioButton(this@MainActivity).apply {
+                id = SCREEN_ID
+                text = getString(R.string.source_screen)
+                setTextColor(Color.BLACK)
+            })
+            addView(RadioButton(this@MainActivity).apply {
+                id = MIC_ID
+                text = getString(R.string.source_mic)
+                setTextColor(Color.BLACK)
+            })
             check(if (store.screen) SCREEN_ID else MIC_ID)
         }
         content.addView(sourceGroup, wide())
@@ -156,15 +173,45 @@ class MainActivity : Activity(), Feed.Listener {
             setTextIsSelectable(true)
         }
         content.addView(linesView, wide())
+        showModel()
     }
 
+    private fun chosenModel(): Model = Model.entries[(modelGroup.checkedRadioButtonId - MODEL_ID).coerceIn(0, Model.entries.size - 1)]
+
     private fun save() {
-        store.engine = engineField.text.toString()
+        store.model = chosenModel().id
         store.lang = langField.text.toString()
         store.title = titleField.text.toString()
         store.screen = sourceGroup.checkedRadioButtonId != MIC_ID
         store.share = shareBox.isChecked
         store.overlay = overlayBox.isChecked
+    }
+
+    /** The line under the model buttons: downloaded, not downloaded, or the download so far. */
+    private fun showModel() {
+        val model = chosenModel()
+        val downloading = Feed.downloading
+        modelStatus.text = when {
+            downloading == model && Feed.downloadTotal > 0 ->
+                getString(R.string.model_downloading, Feed.downloadDone * 100 / Feed.downloadTotal)
+            downloading == model -> getString(R.string.model_downloading_size, Feed.downloadDone / (1024 * 1024))
+            Feed.downloadError.isNotEmpty() && downloading == null && !model.downloaded(this) ->
+                getString(R.string.model_failed, Feed.downloadError)
+            model.downloaded(this) -> getString(R.string.model_ready)
+            else -> getString(R.string.model_missing)
+        }
+        downloadButton.isEnabled = downloading == null && !model.downloaded(this)
+    }
+
+    private fun download() {
+        val model = chosenModel()
+        if (model.downloaded(this) || Feed.downloading != null) return
+        Feed.download(model, 0, -1)
+        val app = applicationContext
+        thread(name = "download") {
+            val error = Downloader(OkHttpClient()).download(app, model) { done, total -> Feed.download(model, done, total) }
+            Feed.download(null, 0, -1, error.orEmpty())
+        }
     }
 
     private fun toggle() {
@@ -173,7 +220,7 @@ class MainActivity : Activity(), Feed.Listener {
 
     private fun startCapture() {
         save()
-        if (store.engine.isBlank()) return toast(R.string.need_engine)
+        if (!chosenModel().downloaded(this)) return toast(R.string.need_model)
         val missing = buildList {
             if (checkSelfPermission(Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED) add(Manifest.permission.RECORD_AUDIO)
             if (Build.VERSION.SDK_INT >= 33 && checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
@@ -206,11 +253,19 @@ class MainActivity : Activity(), Feed.Listener {
         mainButton.text = getString(if (Feed.running) R.string.stop else R.string.start)
         statusView.text = status()
         linesView.text = Feed.text()
+        showModel()
     }
 
     private fun status(): String {
         if (!Feed.running) return Feed.error
-        val engine = if (Feed.engineUp) "connected" else "connecting…"
+        val model = Model.byId(store.model).label
+        val engine = when {
+            Feed.engine == LocalEngine.STATE_LOADING -> "loading…"
+            Feed.engine == LocalEngine.STATE_READY && Feed.speed > 0f -> "ready, %.1f s for each second of speech".format(Feed.speed)
+            Feed.engine == LocalEngine.STATE_READY -> "ready"
+            else -> Feed.engine
+        }
+        val late = if (Feed.late > 0) ", ${Feed.late} pieces dropped" else ""
         val relay = when {
             !Feed.relayOn -> "off"
             Feed.relayUp -> "connected"
@@ -227,7 +282,7 @@ class MainActivity : Activity(), Feed.Listener {
         val bars = Feed.bars()
         val level = "▮".repeat(bars) + "▯".repeat(10 - bars)
         val error = if (Feed.error.isEmpty()) "" else "\n${Feed.error}"
-        return "Engine ${store.engine}: $engine\nShare link: $relay\nSubRead Overlay: $overlay\nSound: $level$error"
+        return "Whisper $model: $engine$late\nShare link: $relay\nSubRead Overlay: $overlay\nSound: $level$error"
     }
 
     private fun showLink() {
@@ -303,5 +358,6 @@ class MainActivity : Activity(), Feed.Listener {
         const val REQUEST_PROJECTION = 2
         const val SCREEN_ID = 1
         const val MIC_ID = 2
+        const val MODEL_ID = 10
     }
 }

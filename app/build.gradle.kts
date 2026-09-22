@@ -12,6 +12,7 @@ val signingReady = !keystorePath.isNullOrBlank() && !keystorePassword.isNullOrBl
 android {
     namespace = "com.honjimaku.subrep"
     compileSdk = 36
+    ndkVersion = "29.0.14206865"
 
     dependenciesInfo {
         includeInApk = false
@@ -25,6 +26,13 @@ android {
         targetSdk = 36
         versionCode = 1
         versionName = "0.1.0"
+
+        // Each phone worth running Whisper on is 64-bit ARM; the speech library is built for
+        // ARMv8.2 (see src/main/cpp/CMakeLists.txt).
+        ndk { abiFilters += "arm64-v8a" }
+        externalNativeBuild {
+            cmake { arguments += listOf("-DANDROID_STL=c++_static") }
+        }
     }
 
     if (signingReady) {
@@ -49,6 +57,13 @@ android {
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
+    }
+
+    externalNativeBuild {
+        cmake {
+            path = file("src/main/cpp/CMakeLists.txt")
+            version = "3.31.6"
+        }
     }
 }
 

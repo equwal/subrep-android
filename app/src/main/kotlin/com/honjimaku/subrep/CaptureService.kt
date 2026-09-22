@@ -24,9 +24,9 @@ import java.util.concurrent.TimeUnit
 import kotlin.concurrent.thread
 
 /**
- * Captures the sound, streams it to the engine, and gives the captions to the screen, to the
- * relay and to SubRead Overlay. A foreground service, so that it lives while the user is in
- * the player.
+ * Captures the sound, turns it into captions with Whisper on the phone, and gives the captions
+ * to the screen, to the relay and to SubRead Overlay. A foreground service, so that it lives
+ * while the user is in the player.
  */
 class CaptureService : Service() {
 
@@ -34,7 +34,7 @@ class CaptureService : Service() {
     private val http = OkHttpClient.Builder().pingInterval(20, TimeUnit.SECONDS).build()
     private val main = Handler(Looper.getMainLooper())
     private val captions = HandlerThread("captions").apply { start() }
-    private var engine: Socket? = null
+    private var engine: LocalEngine? = null
     private var relay: Socket? = null
     private var overlay: OverlayFeed? = null
     private var record: AudioRecord? = null
@@ -58,6 +58,13 @@ class CaptureService : Service() {
         foreground(screen)
         Feed.start(store.share)
 
+        val model = Model.byId(store.model)
+        if (!model.downloaded(this)) {
+            Feed.fail("Download the ${model.label} model first.")
+            stopAll()
+            return
+        }
+
         val record = try {
             if (screen) Capture.ofApps(projectionOf(intent)) else Capture.ofMicrophone()
         } catch (e: Exception) {
@@ -74,17 +81,21 @@ class CaptureService : Service() {
         this.record = record
 
         val lang = store.lang
-        engine = Socket(http, "ws://${store.engine}", { Messages.engineHello(Capture.SAMPLE_RATE, lang, "android") }, ::onEngineText) {
-            Feed.engine(it)
-        }.also { it.start() }
+        val title = store.title
         if (store.share) {
             val secret = store.secret
-            val title = store.title
-            relay = Socket(http, "${Room.RELAY}/pub/${store.room}", { Messages.relayHello(secret, lang, title) }, ::onRelayText) {
-                Feed.relay(it)
-            }.also { it.start() }
+            // With "auto", the viewers see the language once Whisper found it.
+            val hello = { Messages.relayHello(secret, if (lang == "auto") "" else lang, title) }
+            relay = Socket(http, "${Room.RELAY}/pub/${store.room}", hello, ::onRelayText) { Feed.relay(it) }
+                .also { it.start() }
         }
         if (store.overlay && Overlay.installed(this)) overlay = OverlayFeed(this, Handler(captions.looper))
+        engine = LocalEngine(
+            model.file(this), lang,
+            onCaption = ::onCaption,
+            onLanguage = { found -> relay?.send(Messages.status(true, found, title)) },
+            onState = { Feed.engine(it) },
+        ).also { it.start() }
         pump = thread(name = "pcm") { pump(record) }
     }
 
@@ -113,16 +124,15 @@ class CaptureService : Service() {
             val count = record.read(frame, 0, frame.size, AudioRecord.READ_BLOCKING)
             if (count < 0) break
             if (count == 0) continue
-            engine?.send(frame, count)
+            engine?.feed(frame, count)
             Feed.level(Pcm.peak(frame, count))
         }
     }
 
-    private fun onEngineText(text: String) {
-        Messages.error(text)?.let { Feed.fail("engine: $it") }
-        val caption = Messages.caption(text) ?: return
+    private fun onCaption(caption: Caption) {
+        engine?.let { Feed.progress(it.speed, it.late) }
         Feed.caption(caption)
-        relay?.send(text)
+        relay?.send(Messages.caption(caption))
         overlay?.caption(caption)
     }
 
@@ -140,6 +150,7 @@ class CaptureService : Service() {
         record = null
         projection?.stop()
         projection = null
+        // The last piece still goes out, so the relay and the overlay stop after it.
         engine?.stop()
         engine = null
         relay?.stop()
@@ -158,8 +169,8 @@ class CaptureService : Service() {
 
     /** For `adb shell dumpsys activity service com.honjimaku.subrep/.CaptureService`: the state, for a bug report. */
     override fun dump(fd: FileDescriptor, writer: PrintWriter, args: Array<out String>?) {
-        writer.println("running=${Feed.running} engine=${Feed.engineUp} relay=${Feed.relayOn}/${Feed.relayUp}")
-        writer.println("overlay=${Feed.overlayAnswer} peak=${Feed.peak} error=${Feed.error}")
+        writer.println("running=${Feed.running} engine=${Feed.engine} speed=${Feed.speed} late=${Feed.late}")
+        writer.println("relay=${Feed.relayOn}/${Feed.relayUp} overlay=${Feed.overlayAnswer} peak=${Feed.peak} error=${Feed.error}")
         writer.println(Feed.text())
     }
 

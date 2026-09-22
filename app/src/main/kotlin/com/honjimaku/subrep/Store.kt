@@ -7,14 +7,14 @@ class Store(context: Context) {
 
     private val prefs = context.getSharedPreferences("subrep", Context.MODE_PRIVATE)
 
-    /** The engine on the computer, as `address:port`. */
-    var engine: String
-        get() = prefs.getString("engine", "").orEmpty()
-        set(value) = prefs.edit().putString("engine", value.trim()).apply()
+    /** The id of the speech model, see [Model]. */
+    var model: String
+        get() = prefs.getString("model", Model.BASE.id).orEmpty()
+        set(value) = prefs.edit().putString("model", value).apply()
 
     var lang: String
         get() = prefs.getString("lang", "ja").orEmpty()
-        set(value) = prefs.edit().putString("lang", value.trim().ifEmpty { "auto" }).apply()
+        set(value) = prefs.edit().putString("lang", value.trim().lowercase().ifEmpty { "auto" }).apply()
 
     /** True: the sound of the apps on this device. False: the microphone. */
     var screen: Boolean

@@ -1,12 +1,19 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name">Subrep Streamer</string>
-    <string name="about">Live captions of the sound of this device. The sound goes to the Subrep engine on your computer. The captions come back here, to your share link, and to SubRead Overlay over the player.</string>
+    <string name="app_name">Subrep</string>
+    <string name="about">Live captions of the sound of this device, made on this device by Whisper. The captions go to your share link, where the viewers read along with Yomitan, and to SubRead Overlay over the player. No sound leaves the phone.</string>
 
-    <string name="step_engine">1. Engine</string>
-    <string name="step_engine_why">The computer that runs \"subrep serve\", as address:port on the same network. For example 192.168.0.9:8794.</string>
+    <string name="step_model">1. Speech model</string>
+    <string name="step_model_why">One download, kept on the phone.</string>
+    <string name="model_ready">Downloaded.</string>
+    <string name="model_missing">Not downloaded yet.</string>
+    <string name="model_downloading">Downloading, %1$d %%.</string>
+    <string name="model_downloading_size">Downloading, %1$d MB so far.</string>
+    <string name="model_failed">The download failed: %1$s</string>
+    <string name="download">Download</string>
+    <string name="need_model">Download the model first.</string>
     <string name="step_lang">2. Language</string>
-    <string name="step_lang_why">ja, en, ru, fi, es, pt, or auto.</string>
+    <string name="step_lang_why">ja, en, ru, fi, es, pt, or auto. A set language is faster and more exact than auto.</string>
     <string name="step_source">3. Sound</string>
     <string name="source_screen">The apps on this device (Android 10 or later)</string>
     <string name="source_mic">The microphone</string>
@@ -25,12 +32,11 @@
 
     <string name="start">Start the captions</string>
     <string name="stop">Stop the captions</string>
-    <string name="need_engine">Enter the address of the engine first.</string>
     <string name="need_android_10">The sound of other apps needs Android 10. Use the microphone.</string>
     <string name="need_audio_permission">Allow the microphone. Android asks for it for the sound of the apps too.</string>
     <string name="capture_refused">Android did not allow the capture.</string>
 
     <string name="notification_channel">Live captions</string>
     <string name="notification_title">Subrep: live captions</string>
-    <string name="notification_text">The sound goes to the engine.</string>
+    <string name="notification_text">Whisper listens to the sound of this device.</string>
 </resources>
