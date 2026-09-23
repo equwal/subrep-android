@@ -36,7 +36,7 @@ and the old one stops.
 
 ## Cloud captions
 
-The cloud uses Whisper large-v3 turbo on Groq, through subread.space. It is
+The cloud uses Whisper large-v3 turbo on DeepInfra, through subread.space. It is
 more exact than the models that a phone can run, and it uses less battery.
 
 | Pack | Price |
@@ -54,8 +54,9 @@ account: write to the contact address on subread.space with the old id and
 the receipt, and we move the hours.
 
 What goes where: each piece of speech goes to subread.space, which gives it
-to Groq for the text. Neither keeps the sound or the text. The app sends
-nothing while the phone makes the captions.
+to DeepInfra for the text. subread.space keeps neither the sound nor the
+text. DeepInfra says that it does not store them ([data privacy](https://docs.deepinfra.com/account/data-privacy)).
+The app sends nothing while the phone makes the captions.
 
 ## What the phone cannot capture
 
