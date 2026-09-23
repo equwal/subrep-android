@@ -6,7 +6,7 @@
     <string name="step_where">1. Where the captions are made</string>
     <string name="where_phone">On this phone: free, and no sound leaves the phone</string>
     <string name="where_cloud">In the cloud: a larger model, better captions, less battery. It costs hours.</string>
-    <string name="cloud_privacy">In the cloud, each piece of sound goes to subread.space and to Groq, which make the text. Neither keeps the sound or the text.</string>
+    <string name="cloud_privacy">In the cloud, each piece of sound goes to subread.space and to DeepInfra, which make the text. subread.space keeps neither the sound nor the text, and DeepInfra says that it does not store them.</string>
     <string name="cloud_left">Cloud hours left: %1$s. Account: %2$s</string>
     <string name="cloud_offline">Cloud hours: no connection to subread.space.</string>
     <string name="cloud_closed">Cloud captions are not open yet on subread.space.</string>
