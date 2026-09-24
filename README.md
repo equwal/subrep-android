@@ -13,6 +13,14 @@ along and mine with Yomitan, and to
 where a tap on a word opens the dictionary. With captions on the phone, no
 sound leaves the phone.
 
+## Screenshots
+
+<p>
+  <img src="fastlane/metadata/android/en-US/images/phoneScreenshots/1.png" width="260" alt="The settings: the speech model, the language, the sound and the share link">
+</p>
+
+The picture is from a Viwoods AiPaper Reader.
+
 ## How to use it
 
 1. Choose where the captions are made: on this phone (free), or in the
