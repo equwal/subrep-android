@@ -33,7 +33,17 @@ class Cloud(
 
     data class Pack(val id: String, val name: String, val hours: Int, val price: String)
 
-    data class State(val accountId: String, val secondsLeft: Long, val available: Boolean, val packs: List<Pack>)
+    /**
+     * [available]: subread.space sells hours on its Stripe page. [playAvailable]: it can check
+     * Google Play purchases. A server from before Google Play sends no playAvailable.
+     */
+    data class State(
+        val accountId: String,
+        val secondsLeft: Long,
+        val available: Boolean,
+        val packs: List<Pack>,
+        val playAvailable: Boolean = false,
+    )
 
     data class Answer(val text: String, val secondsLeft: Long)
 
@@ -42,6 +52,15 @@ class Cloud(
         if (!response.isSuccessful) throw IOException("subread.space answered ${response.code}")
         parseState(response.body!!.string())
     }
+
+    /**
+     * Gives a Google Play purchase to the account. subread.space checks it with Google, adds its
+     * hours once and consumes it. Returns the seconds left. Throws [IOException] with the reason of
+     * the server.
+     */
+    fun redeem(productId: String, token: String): Long =
+        post("/api/captions/play-purchase", JSONObject().put("product_id", productId).put("purchase_token", token))
+            .getLong("seconds_left")
 
     /** Posts [json] to [path] and returns the answer. Throws [IOException] with the reason of the server. */
     internal fun post(path: String, json: JSONObject): JSONObject =
@@ -103,6 +122,7 @@ class Cloud(
                 packs = (0 until packs.length()).map { i ->
                     packs.getJSONObject(i).run { Pack(getString("id"), getString("name"), getInt("hours"), getString("price_display")) }
                 },
+                playAvailable = json.optBoolean("play_available"),
             )
         }
 

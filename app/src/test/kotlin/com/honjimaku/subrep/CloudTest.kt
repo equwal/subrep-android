@@ -5,13 +5,16 @@ import io.kotest.property.arbitrary.float
 import io.kotest.property.arbitrary.list
 import io.kotest.property.checkAll
 import kotlinx.coroutines.runBlocking
+import org.json.JSONObject
 import org.junit.After
 import org.junit.Assert.assertArrayEquals
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Assert.fail
 import org.junit.Test
+import java.io.IOException
 import java.util.concurrent.CopyOnWriteArrayList
 import kotlin.math.abs
 import kotlin.random.Random
@@ -80,6 +83,44 @@ class CloudTest {
             fail("no exception")
         } catch (_: Cloud.PieceFailed) {
         }
+    }
+
+    @Test
+    fun aPlayPurchaseGoesWithItsTokenAndGivesTheHoursLeft() {
+        site.device = "dev123"
+        site.answer = { 200 to """{"seconds_left": 72000}""" }
+        assertEquals(72000L, site.cloud().redeem("captions20", "tok.A-_1"))
+        val seen = site.seen.single()
+        assertEquals("POST", seen.method)
+        assertEquals("/api/captions/play-purchase", seen.path)
+        assertEquals("subplz_device=dev123", seen.cookie)
+        val body = JSONObject(String(seen.body))
+        assertEquals(setOf("product_id", "purchase_token"), body.keys().asSequence().toSet())
+        assertEquals("captions20", body.getString("product_id"))
+        assertEquals("tok.A-_1", body.getString("purchase_token"))
+    }
+
+    @Test
+    fun aRefusedPlayPurchaseGivesTheReasonOfTheSite() {
+        site.device = "dev123"
+        site.answer = { 403 to """{"detail": "This purchase belongs to another account."}""" }
+        try {
+            site.cloud().redeem("captions20", "tok")
+            fail("no exception")
+        } catch (e: IOException) {
+            assertEquals("This purchase belongs to another account.", e.message)
+        }
+    }
+
+    @Test
+    fun theStateSaysWhetherGooglePlayCanSell() {
+        val state = Cloud.parseState(
+            """{"account_id": "acct_1", "seconds_left": 0, "available": false, "play_available": true, "packs": []}""",
+        )
+        assertFalse(state.available)
+        assertTrue(state.playAvailable)
+        // A server from before Google Play sends no play_available.
+        assertFalse(Cloud.parseState(STATE).playAvailable)
     }
 
     @Test

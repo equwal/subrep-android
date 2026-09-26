@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- The Google Play build sells only through Google Play. This text replaces the one about the payment page. -->
+    <string name="cloud_buy_failed">The purchase is not complete: %1$s</string>
+    <string name="play_pending">Google Play waits for your payment. Open Subrep after you pay to get the hours.</string>
+    <string name="play_owned">Google Play has not closed your last purchase of this pack. Try again in a minute.</string>
+    <string name="play_not_added">You paid, but subread.space did not add the hours yet: %1$s. Subrep tries again each time you open it.</string>
+</resources>

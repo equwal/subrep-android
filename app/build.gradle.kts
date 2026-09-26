@@ -55,13 +55,19 @@ android {
         }
     }
 
-    // The store decides how the app sells cloud hours. play: the Google Play build. Google Play
-    // allows no other payment for digital goods. github: the Stripe page of subread.space.
+    // The store decides how the app sells cloud hours. play: Google Play Billing, because Google
+    // Play allows no other payment for digital goods. github: the Stripe page of subread.space.
     // F-Droid builds github, which has no Google library.
     flavorDimensions += "store"
     productFlavors {
         create("play") { dimension = "store" }
         create("github") { dimension = "store" }
+    }
+
+    lint {
+        // Only the billing library of the play build brings AndroidX. The code uses no AndroidX,
+        // because the github build has none, so the hints to use AndroidX KTX do not apply.
+        disable += "UseKtx"
     }
 
     compileOptions {
@@ -79,6 +85,10 @@ android {
 
 dependencies {
     implementation(libs.okhttp)
+    // Google Play requires its billing library (version 8 or later) for in-app purchases.
+    // It is not in the version catalog, so the F-Droid scanner sees it only on this play line.
+    //noinspection UseTomlInstead
+    "playImplementation"("com.android.billingclient:billing:9.1.0")
 
     testImplementation(libs.junit)
     testImplementation(libs.kotest.property)
