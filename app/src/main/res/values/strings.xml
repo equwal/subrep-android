@@ -14,7 +14,6 @@
         <item quantity="one">Buy %1$d hour for %2$s</item>
         <item quantity="other">Buy %1$d hours for %2$s</item>
     </plurals>
-    <string name="cloud_buy_failed">The payment page did not open: %1$s</string>
     <string name="need_hours">Buy cloud hours first, or choose this phone.</string>
 
     <string name="step_model">2. Speech model on the phone</string>

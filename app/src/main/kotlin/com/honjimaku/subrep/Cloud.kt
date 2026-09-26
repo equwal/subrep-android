@@ -11,8 +11,8 @@ import java.io.IOException
 
 /**
  * Cloud captions on subread.space. The account is the device cookie of the site, kept in
- * [Store.device]: the first answer of the server makes it. Hours bought with [checkout] go to
- * that account.
+ * [Store.device]: the first answer of the server makes it. Hours bought in the app go to that
+ * account.
  *
  * The device token is read and written through two functions, so a test needs no [Store].
  */
@@ -43,15 +43,13 @@ class Cloud(
         parseState(response.body!!.string())
     }
 
-    /** The address of the payment page for [packId]. It opens in the browser. */
-    fun checkout(packId: String): String {
-        val body = JSONObject().put("pack_id", packId).toString().toRequestBody(JSON)
-        return call(Request.Builder().url("$base/api/captions/checkout").post(body).build()).use { response ->
+    /** Posts [json] to [path] and returns the answer. Throws [IOException] with the reason of the server. */
+    internal fun post(path: String, json: JSONObject): JSONObject =
+        call(Request.Builder().url("$base$path").post(json.toString().toRequestBody(JSON)).build()).use { response ->
             val text = response.body!!.string()
             if (!response.isSuccessful) throw IOException(detail(text) ?: "subread.space answered ${response.code}")
-            JSONObject(text).getString("url")
+            JSONObject(text)
         }
-    }
 
     /** The text of [pcm], 16 kHz mono 16-bit little-endian PCM. */
     fun transcribe(pcm: ByteArray, language: String): Answer {

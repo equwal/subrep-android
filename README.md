@@ -102,15 +102,21 @@ whisper.cpp is a submodule:
 
 ```
 git submodule update --init
-./gradlew :app:testDebugUnitTest :app:assembleDebug
+./gradlew :app:testPlayDebugUnitTest :app:testGithubDebugUnitTest :app:assembleGithubDebug
 ```
+
+The app has two builds, one for each store. `github` sells the hour packs
+on the Stripe page of subread.space. The GitHub releases and F-Droid use it,
+and it has no Google library. `play` is the build for Google Play.
 
 The native library is built for 64-bit ARM with ARMv8.2 half-precision and
 dot-product instructions (each phone since 2018). NDK 29 and CMake 3.31.6
 from the Android SDK.
 
 For a release, set `SUBREP_KEYSTORE_FILE`, `SUBREP_KEYSTORE_PASSWORD` and
-`SUBREP_KEY_ALIAS` (default `subrep`), then `./gradlew :app:assembleRelease`.
+`SUBREP_KEY_ALIAS` (default `subrep`). Then run
+`./gradlew :app:assembleGithubRelease` for GitHub, or
+`./gradlew :app:bundlePlayRelease` for Google Play.
 
 ## More projects
 

@@ -1,22 +1,17 @@
 package com.honjimaku.subrep
 
-import com.sun.net.httpserver.HttpExchange
-import com.sun.net.httpserver.HttpServer
 import io.kotest.property.Arb
 import io.kotest.property.arbitrary.float
 import io.kotest.property.arbitrary.list
 import io.kotest.property.checkAll
 import kotlinx.coroutines.runBlocking
-import okhttp3.OkHttpClient
 import org.junit.After
 import org.junit.Assert.assertArrayEquals
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Assert.fail
-import org.junit.Before
 import org.junit.Test
-import java.net.InetSocketAddress
 import java.util.concurrent.CopyOnWriteArrayList
 import kotlin.math.abs
 import kotlin.random.Random
@@ -24,65 +19,41 @@ import kotlin.random.Random
 /** The cloud client against a local server that answers as subread.space does. */
 class CloudTest {
 
-    private class Seen(val method: String, val query: String?, val cookie: String?, val body: ByteArray)
-
-    private lateinit var server: HttpServer
-    private val seen = CopyOnWriteArrayList<Seen>()
-    private var answer: (HttpExchange) -> Pair<Int, String> = { 200 to "{}" }
-    private var device = ""
-
-    private fun cloud() = Cloud(OkHttpClient(), { device }, { device = it }, "http://127.0.0.1:${server.address.port}")
-
-    @Before
-    fun start() {
-        server = HttpServer.create(InetSocketAddress("127.0.0.1", 0), 0)
-        server.createContext("/") { exchange ->
-            val body = exchange.requestBody.readBytes()
-            seen += Seen(exchange.requestMethod, exchange.requestURI.rawQuery, exchange.requestHeaders.getFirst("Cookie"), body)
-            if (exchange.requestHeaders.getFirst("Cookie") == null) {
-                exchange.responseHeaders.add("Set-Cookie", "subplz_device=dev123; HttpOnly; Path=/; SameSite=lax")
-            }
-            val (code, text) = answer(exchange)
-            val bytes = text.toByteArray()
-            exchange.sendResponseHeaders(code, bytes.size.toLong())
-            exchange.responseBody.use { it.write(bytes) }
-        }
-        server.start()
-    }
+    private val site = FakeSite()
 
     @After
-    fun stop() = server.stop(0)
+    fun stop() = site.stop()
 
     @Test
     fun theFirstAnswerMakesTheAccountAndEachLaterCallSendsIt() {
-        answer = { 200 to STATE }
-        val cloud = cloud()
+        site.answer = { 200 to STATE }
+        val cloud = site.cloud()
         val state = cloud.state()
-        assertEquals("dev123", device)
-        assertNull(seen[0].cookie)
+        assertEquals("dev123", site.device)
+        assertNull(site.seen[0].cookie)
         cloud.state()
-        assertEquals("subplz_device=dev123", seen[1].cookie)
+        assertEquals("subplz_device=dev123", site.seen[1].cookie)
         assertEquals(Cloud.State("acct_1", 7200, true, listOf(Cloud.Pack("captions20", "20 hours of cloud captions", 20, "$4.99"))), state)
     }
 
     @Test
     fun aPieceGoesAsPcmWithItsLanguage() {
-        device = "dev123"
-        answer = { 200 to """{"text": "こんにちは", "seconds": 3, "seconds_left": 57}""" }
+        site.device = "dev123"
+        site.answer = { 200 to """{"text": "こんにちは", "seconds": 3, "seconds_left": 57}""" }
         val pcm = byteArrayOf(1, 2, 3, 4)
-        val result = cloud().transcribe(pcm, "ja")
+        val result = site.cloud().transcribe(pcm, "ja")
         assertEquals(Cloud.Answer("こんにちは", 57), result)
-        assertEquals("POST", seen[0].method)
-        assertEquals("lang=ja", seen[0].query)
-        assertArrayEquals(pcm, seen[0].body)
+        assertEquals("POST", site.seen[0].method)
+        assertEquals("lang=ja", site.seen[0].query)
+        assertArrayEquals(pcm, site.seen[0].body)
     }
 
     @Test
     fun noHoursLeftIsOutOfHours() {
-        device = "dev123"
-        answer = { 402 to """{"detail": "No cloud caption hours left."}""" }
+        site.device = "dev123"
+        site.answer = { 402 to """{"detail": "No cloud caption hours left."}""" }
         try {
-            cloud().transcribe(ByteArray(2), "ja")
+            site.cloud().transcribe(ByteArray(2), "ja")
             fail("no exception")
         } catch (_: Cloud.OutOfHours) {
         }
@@ -90,10 +61,10 @@ class CloudTest {
 
     @Test
     fun aServerErrorLosesOnlyThePiece() {
-        device = "dev123"
-        answer = { 502 to """{"detail": "speech service answered 500"}""" }
+        site.device = "dev123"
+        site.answer = { 502 to """{"detail": "speech service answered 500"}""" }
         try {
-            cloud().transcribe(ByteArray(2), "ja")
+            site.cloud().transcribe(ByteArray(2), "ja")
             fail("no exception")
         } catch (e: Cloud.PieceFailed) {
             assertEquals("Cloud: speech service answered 500.", e.message)
@@ -102,20 +73,13 @@ class CloudTest {
 
     @Test
     fun noServerLosesOnlyThePiece() {
-        val cloud = cloud()
-        server.stop(0)
+        val cloud = site.cloud()
+        site.stop()
         try {
             cloud.transcribe(ByteArray(2), "ja")
             fail("no exception")
         } catch (_: Cloud.PieceFailed) {
         }
-    }
-
-    @Test
-    fun checkoutGivesThePaymentPage() {
-        answer = { 200 to """{"url": "https://checkout.stripe.com/c/pay/cs_1"}""" }
-        assertEquals("https://checkout.stripe.com/c/pay/cs_1", cloud().checkout("captions20"))
-        assertEquals("""{"pack_id":"captions20"}""", String(seen[0].body))
     }
 
     @Test

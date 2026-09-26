@@ -38,6 +38,7 @@ class MainActivity : Activity(), Feed.Listener {
 
     private lateinit var store: Store
     private val http = OkHttpClient()
+    private lateinit var shop: Shop
     private lateinit var whereGroup: RadioGroup
     private lateinit var cloudStatus: TextView
     private lateinit var packButtons: LinearLayout
@@ -58,6 +59,8 @@ class MainActivity : Activity(), Feed.Listener {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         store = Store(this)
+        // The Shop calls onChange when the prices come. onChange draws the last state again, with no network call.
+        shop = Shop(this, Cloud(http, store), ::onChange)
         content = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
             setPadding(dp(20), dp(20), dp(20), dp(20))
@@ -75,7 +78,8 @@ class MainActivity : Activity(), Feed.Listener {
         super.onResume()
         Feed.add(this)
         onChange()
-        // After a payment in the browser, the user comes back here: show the new hours.
+        // Send the purchases that wait, and show the hours: after a payment, the user comes back here.
+        shop.resume()
         refreshCloud()
     }
 
@@ -83,6 +87,11 @@ class MainActivity : Activity(), Feed.Listener {
         Feed.remove(this)
         save()
         super.onPause()
+    }
+
+    override fun onDestroy() {
+        shop.close()
+        super.onDestroy()
     }
 
     private fun draw() {
@@ -327,6 +336,7 @@ class MainActivity : Activity(), Feed.Listener {
                     packButtons.removeAllViews()
                 } else {
                     Feed.cloudLeft(state.secondsLeft)
+                    shop.load(state.packs)
                     showCloud(state)
                 }
             }
@@ -334,29 +344,20 @@ class MainActivity : Activity(), Feed.Listener {
     }
 
     private fun showCloud(state: Cloud.State) {
-        if (!state.available) {
+        if (!shop.sells(state)) {
             cloudStatus.text = getString(R.string.cloud_closed)
             packButtons.removeAllViews()
             return
         }
         cloudStatus.text = getString(R.string.cloud_left, Cloud.hours(state.secondsLeft), state.accountId)
-        if (packButtons.childCount == state.packs.size) return
+        // Google Play gives its prices after the packs come, so compare the labels, not the count.
+        val offers = state.packs.mapNotNull { pack ->
+            shop.price(pack)?.let { pack to resources.getQuantityString(R.plurals.cloud_buy, pack.hours, pack.hours, it) }
+        }
+        val shown = (0 until packButtons.childCount).map { (packButtons.getChildAt(it) as Button).text.toString() }
+        if (shown == offers.map { it.second }) return
         packButtons.removeAllViews()
-        for (pack in state.packs) {
-            packButtons.addView(button(resources.getQuantityString(R.plurals.cloud_buy, pack.hours, pack.hours, pack.price)) { buy(pack) })
-        }
-    }
-
-    private fun buy(pack: Cloud.Pack) {
-        val app = Cloud(http, store)
-        thread(name = "checkout") {
-            val url = runCatching { app.checkout(pack.id) }
-            runOnUiThread {
-                url.onSuccess { open(it) }.onFailure {
-                    Toast.makeText(this, getString(R.string.cloud_buy_failed, it.message), Toast.LENGTH_LONG).show()
-                }
-            }
-        }
+        for ((pack, label) in offers) packButtons.addView(button(label) { shop.buy(pack, state.accountId) })
     }
 
     private fun status(): String {

@@ -55,6 +55,15 @@ android {
         }
     }
 
+    // The store decides how the app sells cloud hours. play: the Google Play build. Google Play
+    // allows no other payment for digital goods. github: the Stripe page of subread.space.
+    // F-Droid builds github, which has no Google library.
+    flavorDimensions += "store"
+    productFlavors {
+        create("play") { dimension = "store" }
+        create("github") { dimension = "store" }
+    }
+
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
