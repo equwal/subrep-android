@@ -14,6 +14,9 @@ import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.text.InputType
+import android.text.SpannableString
+import android.text.Spanned
+import android.text.style.UnderlineSpan
 import android.view.View
 import android.widget.Button
 import android.widget.CheckBox
@@ -204,7 +207,24 @@ class MainActivity : Activity(), Feed.Listener {
             setTextIsSelectable(true)
         }
         content.addView(linesView, wide())
+        moreApps()
         showModel()
+    }
+
+    /** The other sites and apps of the same author. A tap on an entry opens its page in the browser. */
+    private fun moreApps() {
+        step(R.string.more_apps, "")
+        for (app in MORE_APPS) {
+            val name = getString(app.name)
+            content.addView(TextView(this).apply {
+                text = SpannableString("$name\n${getString(app.line)}").apply {
+                    setSpan(UnderlineSpan(), 0, name.length, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
+                }
+                textSize = 15f
+                setTextColor(Color.BLACK)
+                setOnClickListener { open(app.url) }
+            }, wide(top = 12))
+        }
     }
 
     private fun chosenModel(): Model = Model.entries[(modelGroup.checkedRadioButtonId - MODEL_ID).coerceIn(0, Model.entries.size - 1)]
