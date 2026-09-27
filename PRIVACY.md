@@ -22,9 +22,11 @@ The app sends no sound.
   does not store them
   ([data privacy](https://docs.deepinfra.com/account/data-privacy)).
   subread.space takes the length of each piece from your hours.
-- **An account, for the cloud captions.** subread.space gives the app an
-  account with a random id (`acct_...`) and a random device token. The
-  account holds your hours. It has no name, email address or phone number.
+- **An account.** Each time that you open the app, it asks subread.space for
+  the hours of your account. The first time that you open the app,
+  subread.space makes the account, also when you use only the captions on the
+  phone. The account has a random id (`acct_...`) and a random device token.
+  It holds your hours. It has no name, email address or phone number.
 - **Purchases.** In the Google Play build, Google Play takes the payment. The
   app sends the purchase token to subread.space. subread.space asks Google Play
   if the purchase is paid, and then adds the hours. It keeps the product, the

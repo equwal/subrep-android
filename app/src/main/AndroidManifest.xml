@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
 
-    <!-- The captions go to the share relay, and the speech model comes from Hugging Face. No sound leaves the phone. -->
+    <!-- The captions go to the share relay, and the speech model comes from Hugging Face. The cloud hours and the cloud captions come from subread.space. The sound leaves the phone only for the cloud captions. -->
     <uses-permission android:name="android.permission.INTERNET" />
     <!-- Android asks for this permission for the sound of other apps too, not only for the microphone. -->
     <uses-permission android:name="android.permission.RECORD_AUDIO" />
