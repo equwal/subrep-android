@@ -15,7 +15,10 @@ import org.junit.Assert.assertTrue
 import org.junit.Assert.fail
 import org.junit.Test
 import java.io.IOException
+import java.util.concurrent.Callable
 import java.util.concurrent.CopyOnWriteArrayList
+import java.util.concurrent.CountDownLatch
+import java.util.concurrent.Executors
 import kotlin.math.abs
 import kotlin.random.Random
 
@@ -37,6 +40,41 @@ class CloudTest {
         cloud.state()
         assertEquals("subplz_device=dev123", site.seen[1].cookie)
         assertEquals(Cloud.State("acct_1", 7200, true, listOf(Cloud.Pack("captions20", "20 hours of cloud captions", 20, "$4.99"))), state)
+    }
+
+    /**
+     * On a new phone, the screen asks for the state while the Shop sends a Google Play purchase. The
+     * server makes a new account for each call without the device cookie. So only one call can go
+     * without it. The other call waits for the first answer and sends its cookie.
+     */
+    @Test
+    fun twoCallsAtOnceOnANewPhoneMakeOneAccount() {
+        // The answer is slow, so the second call starts before the first answer comes.
+        site.answer = {
+            Thread.sleep(300)
+            200 to STATE
+        }
+        // The screen and the Shop each make their own Cloud, as in the app.
+        val screen = site.cloud()
+        val shop = site.cloud()
+        val start = CountDownLatch(1)
+        val pool = Executors.newFixedThreadPool(2)
+        try {
+            val state = pool.submit(Callable {
+                start.await()
+                screen.state()
+            })
+            val left = pool.submit(Callable {
+                start.await()
+                shop.redeem("captions20", "tok")
+            })
+            start.countDown()
+            assertEquals(7200L, state.get().secondsLeft)
+            assertEquals(7200L, left.get())
+        } finally {
+            pool.shutdown()
+        }
+        assertEquals(listOf(null, "subplz_device=dev123"), site.seen.map { it.cookie })
     }
 
     @Test

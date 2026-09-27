@@ -91,7 +91,17 @@ class Cloud(
         }
     }
 
+    /**
+     * Sends [request] with the device cookie. Without the cookie, the server makes a new account for
+     * each call. So only one call at a time goes without it. A call that waits here sends the cookie
+     * of the answer before it.
+     */
     private fun call(request: Request): Response {
+        if (readDevice().isNotEmpty()) return send(request)
+        return synchronized(FIRST) { send(request) }
+    }
+
+    private fun send(request: Request): Response {
         val device = readDevice()
         val response = http.newCall(
             if (device.isEmpty()) request else request.newBuilder().header("Cookie", "$COOKIE=$device").build(),
@@ -105,6 +115,12 @@ class Cloud(
         const val COOKIE = "subplz_device"
         private val JSON = "application/json".toMediaType()
         private val PCM = "application/octet-stream".toMediaType()
+
+        /**
+         * The lock of the calls without the device cookie. All Cloud objects use it, because the
+         * screen, the Shop and the capture service each make their own Cloud.
+         */
+        private val FIRST = Any()
 
         /** The device token in the Set-Cookie headers of an answer, or null. */
         fun deviceFrom(setCookies: List<String>): String? = setCookies.firstNotNullOfOrNull { header ->
