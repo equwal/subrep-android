@@ -76,10 +76,9 @@ class Shop(
             // The device cookie is the secret, and it never goes to Google.
             .setObfuscatedAccountId(accountId)
             .build()
-        val result = client.launchBillingFlow(activity, params)
-        // Google Play gives the result of the purchase to onPurchasesUpdated. A code here means
-        // that the purchase sheet did not open.
-        if (result.responseCode != BillingResponseCode.OK) onPurchasesUpdated(result, null)
+        // Google Play gives each result to onPurchasesUpdated, also a failure to open the purchase
+        // sheet. So this function does not read the result of the call.
+        client.launchBillingFlow(activity, params)
     }
 
     /** Sends each paid purchase that subread.space did not consume yet. It shows no message. */
