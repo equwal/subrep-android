@@ -1,0 +1,21 @@
+Subrep makes live captions of the sound of your device. Whisper makes them on the phone, and a share link gives them to other people.
+
+<b>How it works</b>
+<ul>
+<li>The app captures the sound of the apps on the phone (a video, a game, a browser; Android 10 or later) or the microphone.</li>
+<li>Whisper, on the phone, turns the sound into captions. No sound leaves the phone.</li>
+<li>The captions go to your share link on honjimaku.com, where viewers read along, and to SubRead Overlay over the player, where a tap on a word opens the dictionary.</li>
+</ul>
+
+<b>Speech models</b>
+The app downloads the model that you choose from Hugging Face (ggerganov/whisper.cpp): tiny, base (82 MB) or small (264 MB). Base keeps up on most phones.
+
+<b>Cloud captions (optional)</b>
+Cloud captions use Whisper large-v3 turbo on DeepInfra, through subread.space. They cost hours that you buy on subread.space. The app sends only speech, and only when you choose the cloud.
+
+<b>Permissions</b>
+<ul>
+<li>Screen capture and the microphone permission: for the sound of other apps. Android asks each time the captions start.</li>
+<li>Internet: for the model download, the share link and the cloud captions.</li>
+<li>Notifications: for the notification with the "Stop" button.</li>
+</ul>

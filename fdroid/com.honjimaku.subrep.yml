@@ -1,0 +1,44 @@
+AntiFeatures:
+  NonFreeNet:
+    en-US: The share link sends the captions to a relay on honjimaku.com, whose server
+      is not free software. Cloud captions, optional, send speech to subread.space
+      and DeepInfra.
+Categories:
+  - Speech Recognizer
+License: AGPL-3.0-only
+AuthorName: equwal
+WebSite: https://honjimaku.com/subrep/
+SourceCode: https://github.com/equwal/subrep-android
+IssueTracker: https://github.com/equwal/subrep-android/issues
+Changelog: https://github.com/equwal/subrep-android/releases
+Donate: https://ko-fi.com/truex
+
+AutoName: Subrep
+
+RepoType: git
+Repo: https://github.com/equwal/subrep-android.git
+Binaries: https://github.com/equwal/subrep-android/releases/download/v%v/Subrep-%v.apk
+
+Builds:
+  - versionName: 0.2.1
+    versionCode: 4
+    commit: v0.2.1
+    subdir: app
+    submodules: true
+    sudo:
+      - apt-get update
+      - apt-get install -y cmake ninja-build
+    gradle:
+      - yes
+    scandelete:
+      - third_party/whisper.cpp/bindings
+      - third_party/whisper.cpp/examples
+      - third_party/whisper.cpp/models
+    ndk: 29.0.14206865
+
+AllowedAPKSigningKeys: 1850490335e34b5a8edc9054125f2fb276afa2905755f4cf390b02973e775e14
+
+AutoUpdateMode: Version
+UpdateCheckMode: Tags
+CurrentVersion: 0.2.1
+CurrentVersionCode: 4

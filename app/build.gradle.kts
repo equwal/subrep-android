@@ -25,8 +25,8 @@ android {
         // The sound of other apps can be captured from Android 10 (API 29). Older devices get the microphone.
         minSdk = 26
         targetSdk = 36
-        versionCode = 3
-        versionName = "0.2.0"
+        versionCode = 4
+        versionName = "0.2.1"
 
         // Each phone worth running Whisper on is 64-bit ARM; the speech library is built for
         // ARMv8.2 (see src/main/cpp/CMakeLists.txt).
@@ -50,7 +50,11 @@ android {
     buildTypes {
         debug { applicationIdSuffix = ".debug" }
         release {
-            isMinifyEnabled = false
+            // R8 removes unused code and resources. F-Droid asks for it. The JNI
+            // methods of Whisper keep their names through the default rules.
+            isMinifyEnabled = true
+            isShrinkResources = true
+            proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"))
             if (signingReady) signingConfig = signingConfigs.getByName("release")
         }
     }

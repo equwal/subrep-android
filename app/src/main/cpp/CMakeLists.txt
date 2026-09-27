@@ -12,6 +12,20 @@ endif ()
 
 set(WHISPER_DIR ${CMAKE_CURRENT_SOURCE_DIR}/../../../../third_party/whisper.cpp)
 
+# Reproducible build: F-Droid builds this library again, on Linux and at another
+# path, and compares it with the signed APK. The maps remove the paths of the
+# build machine from the __FILE__ strings of ggml. -ffile-reproducible writes "/"
+# in them on Windows too. An empty GIT_EXE stops ggml from recording the git state
+# of the checkout, which the F-Droid scanner changes.
+get_filename_component(SUBREP_ROOT "${CMAKE_CURRENT_SOURCE_DIR}/../../../.." ABSOLUTE)
+get_filename_component(SUBREP_TOOLCHAIN_BIN "${CMAKE_C_COMPILER}" DIRECTORY)
+get_filename_component(SUBREP_TOOLCHAIN_ROOT "${SUBREP_TOOLCHAIN_BIN}" DIRECTORY)
+add_compile_options(
+    -ffile-reproducible
+    "-ffile-prefix-map=${SUBREP_ROOT}=."
+    "-ffile-prefix-map=${SUBREP_TOOLCHAIN_ROOT}=toolchain")
+set(GIT_EXE "" CACHE FILEPATH "Not used: the build records no git state" FORCE)
+
 set(BUILD_SHARED_LIBS      OFF CACHE BOOL "" FORCE)
 set(WHISPER_BUILD_TESTS    OFF CACHE BOOL "" FORCE)
 set(WHISPER_BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
@@ -32,3 +46,7 @@ add_subdirectory(${WHISPER_DIR} whisper EXCLUDE_FROM_ALL)
 add_library(subrep_whisper SHARED whisper_jni.c)
 target_link_libraries(subrep_whisper PRIVATE whisper log)
 target_link_options(subrep_whisper PRIVATE -Wl,--gc-sections -Wl,--exclude-libs,ALL)
+# No GNU build ID. The linker makes it from the debug information, and that holds the
+# build folder of Gradle (.cxx/<hash>), whose name is different on each machine.
+# Without it, the stripped library is the same on the F-Droid build server.
+target_link_options(subrep_whisper PRIVATE -Wl,--build-id=none)
