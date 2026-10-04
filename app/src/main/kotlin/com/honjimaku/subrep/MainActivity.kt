@@ -76,7 +76,8 @@ class MainActivity : Activity(), Feed.Listener {
         Feed.add(this)
         onChange()
         // After a payment in the browser, the user comes back here: show the new hours.
-        refreshCloud()
+        // Ask subread.space only when the user chose cloud captions.
+        if (whereGroup.checkedRadioButtonId == CLOUD_ID) refreshCloud()
     }
 
     override fun onPause() {
@@ -103,6 +104,7 @@ class MainActivity : Activity(), Feed.Listener {
             })
             check(if (store.cloud) CLOUD_ID else PHONE_ID)
         }
+        whereGroup.setOnCheckedChangeListener { _, id -> if (id == CLOUD_ID) refreshCloud() }
         content.addView(whereGroup, wide())
         cloudStatus = TextView(this).apply {
             setTextColor(Color.BLACK)
