@@ -1,8 +1,8 @@
 AntiFeatures:
   NonFreeNet:
-    en-US: The share link sends the captions to a relay on honjimaku.com, whose server
-      is not free software. Cloud captions, optional, send speech to subread.space
-      and DeepInfra.
+    en-US: Cloud captions, optional, send speech to subread.space and on to DeepInfra,
+      whose service is not free software. The share link relay on honjimaku.com runs
+      free software: https://github.com/equwal/honjimaku/tree/master/subrep-relay
 Categories:
   - Speech Recognizer
 License: AGPL-3.0-only
