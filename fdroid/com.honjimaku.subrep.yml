@@ -20,9 +20,9 @@ Repo: https://github.com/equwal/subrep-android.git
 Binaries: https://github.com/equwal/subrep-android/releases/download/v%v/Subrep-%v.apk
 
 Builds:
-  - versionName: 0.2.3
-    versionCode: 6
-    commit: v0.2.3
+  - versionName: 0.2.4
+    versionCode: 7
+    commit: v0.2.4
     subdir: app
     submodules: true
     sudo:
@@ -40,5 +40,5 @@ AllowedAPKSigningKeys: 1850490335e34b5a8edc9054125f2fb276afa2905755f4cf390b02973
 
 AutoUpdateMode: Version
 UpdateCheckMode: Tags ^v[0-9.]+$
-CurrentVersion: 0.2.3
-CurrentVersionCode: 6
+CurrentVersion: 0.2.4
+CurrentVersionCode: 7

@@ -21,8 +21,9 @@ class Store(context: Context) {
         get() = prefs.getBoolean("screen", true)
         set(value) = prefs.edit().putBoolean("screen", value).apply()
 
+    /** Send the captions to the share link. Off until the user turns it on. */
     var share: Boolean
-        get() = prefs.getBoolean("share", true)
+        get() = prefs.getBoolean("share", false)
         set(value) = prefs.edit().putBoolean("share", value).apply()
 
     /** What the viewers see as the name of the stream. */
