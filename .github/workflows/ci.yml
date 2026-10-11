@@ -11,7 +11,10 @@ jobs:
         with:
           distribution: temurin
           java-version: 17
-      - uses: android-actions/setup-android@v3
-      - run: sdkmanager "ndk;29.0.14206865" "platforms;android-36" "build-tools;36.0.0"
+      # The runner image ships the Android SDK; only the NDK and platform are pinned here.
+      - run: |
+          SDKM="$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager"
+          yes | "$SDKM" --licenses > /dev/null || true
+          "$SDKM" --install "ndk;29.0.14206865" "platforms;android-36" "build-tools;36.0.0"
       - uses: gradle/actions/setup-gradle@v4
       - run: ./gradlew testDebugUnitTest assembleRelease
