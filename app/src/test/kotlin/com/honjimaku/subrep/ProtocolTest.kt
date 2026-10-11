@@ -130,5 +130,7 @@ class PcmTest {
         assertEquals(Room.RELAY, Room.relayUrl("https://my.example"))
         assertEquals("https://cap.example", Cloud.serverUrl("https://cap.example/"))
         assertEquals(Cloud.BASE, Cloud.serverUrl("cap.example"))
+        assertEquals(Room.RELAY, Room.relayUrl("wss://"))
+        assertEquals(Cloud.BASE, Cloud.serverUrl("https://"))
     }
 }

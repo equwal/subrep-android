@@ -85,8 +85,8 @@ class Cloud(
 
     companion object {
         const val BASE = "https://subread.space"
-        /** [value] if it is an http:// or https:// address, else the default [BASE]. A self-hosted server goes here. */
-        fun serverUrl(value: String): String = value.trim().trimEnd('/').takeIf { it.startsWith("https://") || it.startsWith("http://") } ?: BASE
+        /** [value] if it is an http:// or https:// address with a host, else the default [BASE]. A self-hosted server goes here. */
+        fun serverUrl(value: String): String = Room.withHost(value, "http", "https") ?: BASE
 
         const val COOKIE = "subplz_device"
         private val JSON = "application/json".toMediaType()

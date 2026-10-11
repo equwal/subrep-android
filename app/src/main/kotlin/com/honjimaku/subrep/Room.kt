@@ -14,8 +14,15 @@ object Room {
 
     const val RELAY = "wss://honjimaku.com/subrep"
 
-    /** [value] if it is a ws:// or wss:// address, else the default [RELAY]. A self-hosted relay goes here. */
-    fun relayUrl(value: String): String = value.trim().trimEnd('/').takeIf { it.startsWith("wss://") || it.startsWith("ws://") } ?: RELAY
+    /** [value] if it is a ws:// or wss:// address with a host, else the default [RELAY]. A self-hosted relay goes here. */
+    fun relayUrl(value: String): String = withHost(value, "ws", "wss") ?: RELAY
+
+    /** [value] without spaces and a final "/", if its scheme is one of [schemes] and it has a host; else null. */
+    fun withHost(value: String, vararg schemes: String): String? {
+        val url = value.trim().trimEnd('/')
+        val uri = runCatching { java.net.URI(url) }.getOrNull() ?: return null
+        return url.takeIf { uri.scheme in schemes && !uri.host.isNullOrEmpty() }
+    }
 
     private val random = SecureRandom()
 
