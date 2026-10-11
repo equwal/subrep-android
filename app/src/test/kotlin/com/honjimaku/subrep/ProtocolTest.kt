@@ -121,4 +121,14 @@ class PcmTest {
         val out = FloatArray(4)
         assertEquals(1, Pcm.toFloat(bytes, 3, out))
     }
+
+    @Test
+    fun `a self-hosted relay and cloud server replace the defaults, a bad address does not`() {
+        assertEquals("wss://my.example/subrep", Room.relayUrl(" wss://my.example/subrep/ "))
+        assertEquals("ws://127.0.0.1:8812", Room.relayUrl("ws://127.0.0.1:8812"))
+        assertEquals(Room.RELAY, Room.relayUrl(""))
+        assertEquals(Room.RELAY, Room.relayUrl("https://my.example"))
+        assertEquals("https://cap.example", Cloud.serverUrl("https://cap.example/"))
+        assertEquals(Cloud.BASE, Cloud.serverUrl("cap.example"))
+    }
 }

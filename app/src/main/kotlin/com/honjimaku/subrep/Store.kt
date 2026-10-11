@@ -41,6 +41,16 @@ class Store(context: Context) {
         get() = prefs.getString("device", "").orEmpty()
         set(value) = prefs.edit().putString("device", value).apply()
 
+    /** The relay of the share link. The default is honjimaku.com; see [Room.relayUrl]. */
+    var relay: String
+        get() = Room.relayUrl(prefs.getString("relay", "").orEmpty())
+        set(value) = prefs.edit().putString("relay", value.trim()).apply()
+
+    /** The server of the cloud captions. The default is subread.space; see [Cloud.serverUrl]. */
+    var cloudServer: String
+        get() = Cloud.serverUrl(prefs.getString("cloud_server", "").orEmpty())
+        set(value) = prefs.edit().putString("cloud_server", value.trim()).apply()
+
     var overlay: Boolean
         get() = prefs.getBoolean("overlay", true)
         set(value) = prefs.edit().putBoolean("overlay", value).apply()

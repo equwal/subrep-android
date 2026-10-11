@@ -33,6 +33,9 @@
     <string name="source_mic">The microphone</string>
     <string name="step_share">5. Share</string>
     <string name="share_on">Share the captions by link</string>
+    <string name="server_note">Run your own servers: leave these empty to use honjimaku.com and subread.space. Server source: github.com/equwal/honjimaku (subrep-relay) and github.com/equwal/subplz-web (cloud captions).</string>
+    <string name="relay_hint">Own relay: wss://example.org/subrep</string>
+    <string name="cloud_server_hint">Own cloud captions server: https://example.org</string>
     <string name="share_title_hint">Name of the stream, for the viewers</string>
     <string name="copy">Copy</string>
     <string name="share">Share</string>

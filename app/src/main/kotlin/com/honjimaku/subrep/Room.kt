@@ -14,6 +14,9 @@ object Room {
 
     const val RELAY = "wss://honjimaku.com/subrep"
 
+    /** [value] if it is a ws:// or wss:// address, else the default [RELAY]. A self-hosted relay goes here. */
+    fun relayUrl(value: String): String = value.trim().trimEnd('/').takeIf { it.startsWith("wss://") || it.startsWith("ws://") } ?: RELAY
+
     private val random = SecureRandom()
 
     /** A room id: 12 characters of the URL alphabet, as the desktop app makes them. */

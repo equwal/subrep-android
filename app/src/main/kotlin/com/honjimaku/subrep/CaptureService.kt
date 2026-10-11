@@ -87,7 +87,7 @@ class CaptureService : Service() {
             val secret = store.secret
             // With "auto", the viewers see the language once Whisper found it.
             val hello = { Messages.relayHello(secret, if (lang == "auto") "" else lang, title) }
-            relay = Socket(http, "${Room.RELAY}/pub/${store.room}", hello, ::onRelayText) { Feed.relay(it) }
+            relay = Socket(http, "${store.relay}/pub/${store.room}", hello, ::onRelayText) { Feed.relay(it) }
                 .also { it.start() }
         }
         if (store.overlay && Overlay.installed(this)) overlay = OverlayFeed(this, Handler(captions.looper))

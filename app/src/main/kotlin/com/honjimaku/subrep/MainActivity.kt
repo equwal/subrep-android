@@ -47,6 +47,8 @@ class MainActivity : Activity(), Feed.Listener {
     private lateinit var downloadButton: Button
     private lateinit var langField: EditText
     private lateinit var titleField: EditText
+    private lateinit var relayField: EditText
+    private lateinit var cloudServerField: EditText
     private lateinit var sourceGroup: RadioGroup
     private lateinit var shareBox: CheckBox
     private lateinit var overlayBox: CheckBox
@@ -164,6 +166,9 @@ class MainActivity : Activity(), Feed.Listener {
         }
         content.addView(shareBox, wide())
         titleField = field(store.title, getString(R.string.share_title_hint), InputType.TYPE_CLASS_TEXT)
+        note(getString(R.string.server_note), top = 12)
+        relayField = field(store.relay.takeIf { it != Room.RELAY }.orEmpty(), getString(R.string.relay_hint), InputType.TYPE_TEXT_VARIATION_URI)
+        cloudServerField = field(store.cloudServer.takeIf { it != Cloud.BASE }.orEmpty(), getString(R.string.cloud_server_hint), InputType.TYPE_TEXT_VARIATION_URI)
         linkView = TextView(this).apply {
             setTextColor(Color.BLACK)
             textSize = 15f
@@ -236,6 +241,8 @@ class MainActivity : Activity(), Feed.Listener {
         store.model = chosenModel().id
         store.lang = langField.text.toString()
         store.title = titleField.text.toString()
+        store.relay = relayField.text.toString()
+        store.cloudServer = cloudServerField.text.toString()
         store.screen = sourceGroup.checkedRadioButtonId != MIC_ID
         store.share = shareBox.isChecked
         store.overlay = overlayBox.isChecked
@@ -391,7 +398,7 @@ class MainActivity : Activity(), Feed.Listener {
     }
 
     private fun showLink() {
-        linkView.text = Room.watchUrl(Room.RELAY, store.room)
+        linkView.text = Room.watchUrl(store.relay, store.room)
     }
 
     private fun copyLink() {

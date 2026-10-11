@@ -23,7 +23,7 @@ class Cloud(
     private val base: String = BASE,
 ) {
 
-    constructor(http: OkHttpClient, store: Store) : this(http, { store.device }, { store.device = it })
+    constructor(http: OkHttpClient, store: Store) : this(http, { store.device }, { store.device = it }, serverUrl(store.cloudServer))
 
     /** The piece is lost, but the next can work: the network, or the speech service. */
     class PieceFailed(message: String) : Exception(message)
@@ -85,6 +85,9 @@ class Cloud(
 
     companion object {
         const val BASE = "https://subread.space"
+        /** [value] if it is an http:// or https:// address, else the default [BASE]. A self-hosted server goes here. */
+        fun serverUrl(value: String): String = value.trim().trimEnd('/').takeIf { it.startsWith("https://") || it.startsWith("http://") } ?: BASE
+
         const val COOKIE = "subplz_device"
         private val JSON = "application/json".toMediaType()
         private val PCM = "application/octet-stream".toMediaType()
